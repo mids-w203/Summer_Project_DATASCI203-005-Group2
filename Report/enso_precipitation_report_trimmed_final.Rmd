@@ -1,0 +1,326 @@
+---
+title: "El Niño and the California Water Year: A Descriptive Analysis of ENSO Intensity and Statewide Precipitation"
+subtitle: "DATASCI 203 Final Project (Group 2)"
+author: "Daniel Bowd, Gunhui Kim, Rishi Raj, and Sasha Schaps"
+date: "August 4th, 2026"
+output:
+  pdf_document:
+    extra_dependencies: ["pdflscape", "float"]
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, message = FALSE, warning = FALSE,
+  dpi = 300, fig.width = 6.5, fig.height = 3.1, fig.align = "center"
+)
+
+library(tidyverse)
+library(patchwork)
+library(sandwich)
+library(lmtest)
+library(stargazer)
+
+theme_set(theme_minimal())
+
+set.seed(203)
+```
+
+```{r helpers, include=FALSE}
+get_robust_vcov <- function(model) vcovHC(model, type = "HC1")
+get_robust_se   <- function(model) sqrt(diag(get_robust_vcov(model)))
+
+get_robust_ci <- function(model, term, level = 0.95) {
+  est <- coef(model)[term]
+  se  <- get_robust_se(model)[term]
+  tcrit <- qt(1 - (1 - level) / 2, df = model$df.residual)
+  c(lower = est - tcrit * se, upper = est + tcrit * se)
+}
+
+skewness <- function(x) {
+  x <- x[!is.na(x)]
+  mean((x - mean(x))^3) / (mean((x - mean(x))^2))^(3 / 2)
+}
+
+phase_colors <- c("La Niña" = "#0072B2", "Neutral" = "#009E73", "El Niño" = "#D55E00")
+phase_shapes <- c("La Niña" = 17, "Neutral" = 16, "El Niño" = 15)
+```
+
+```{r load-data, include=FALSE}
+d <- read.csv("Data/ca_enso_analysis.csv") |>
+  mutate(
+    enso_phase = factor(enso_phase, levels = c("La Niña", "Neutral", "El Niño")),
+    phase      = factor(phase,      levels = c("La Niña", "Neutral", "El Niño"))
+  )
+
+n_disagree <- sum(as.character(d$phase) != as.character(d$enso_phase))
+
+mean_precip     <- mean(d$precip_in)
+sd_precip       <- sd(d$precip_in)
+skew_precip     <- skewness(d$precip_in)
+skew_log_precip <- skewness(log(d$precip_in))
+cor_oni_rsoi    <- cor(d$oni_djf, d$rsoi)
+oni_lag_r       <- cor(d$oni_djf, d$oni_djf_lag1, use = "complete.obs")
+n_vstrong       <- sum(d$enso_strength == "very_strong")
+mean_vstrong    <- mean(d$precip_in[d$enso_strength == "very_strong"])
+```
+
+```{r estimate-models, include=FALSE}
+
+model_linear   <- lm(precip_in ~ oni_djf, data = d)
+model_phase    <- lm(precip_in ~ el_nino + la_nina, data = d)
+model_lagtrend <- lm(precip_in ~ oni_djf + oni_djf_lag1 + time_trend, data = d)
+model_log      <- lm(log(precip_in) ~ oni_djf, data = d)
+
+ct_linear   <- coeftest(model_linear,   vcov = get_robust_vcov)
+ct_phase    <- coeftest(model_phase,    vcov = get_robust_vcov)
+ct_lagtrend <- coeftest(model_lagtrend, vcov = get_robust_vcov)
+ct_log      <- coeftest(model_log,      vcov = get_robust_vcov)
+
+slope_linear  <- unname(coef(model_linear)["oni_djf"])
+slope_rob_se  <- unname(get_robust_se(model_linear)["oni_djf"])
+slope_cl_se   <- summary(model_linear)$coefficients["oni_djf", "Std. Error"]
+se_pct_larger <- 100 * (slope_rob_se / slope_cl_se - 1)
+p_linear_rob  <- ct_linear["oni_djf", "Pr(>|t|)"]
+p_log_rob     <- ct_log["oni_djf", "Pr(>|t|)"]
+pct_per_oni   <- 100 * (exp(unname(coef(model_log)["oni_djf"])) - 1)
+r2_linear     <- summary(model_linear)$r.squared
+r2_lagtrend   <- summary(model_lagtrend)$r.squared
+r2_log        <- summary(model_log)$r.squared
+cor_oni       <- cor(d$precip_in, d$oni_djf)
+cor_rsoi      <- cor(d$precip_in, d$rsoi)
+cor_oni_fmt   <- sprintf("%.3f", cor_oni)
+cor_rsoi_fmt  <- sprintf("%.3f", cor_rsoi)
+elnino_coef   <- unname(coef(model_phase)["el_nino"])
+elnino_p      <- ct_phase["el_nino", "Pr(>|t|)"]
+lanina_coef   <- unname(coef(model_phase)["la_nina"])
+lanina_p      <- ct_phase["la_nina", "Pr(>|t|)"]
+oni_m3_coef   <- unname(coef(model_lagtrend)["oni_djf"])
+oni_m3_p      <- ct_lagtrend["oni_djf", "Pr(>|t|)"]
+lag_coef      <- unname(coef(model_lagtrend)["oni_djf_lag1"])
+lag_p         <- ct_lagtrend["oni_djf_lag1", "Pr(>|t|)"]
+trend_p       <- ct_lagtrend["time_trend", "Pr(>|t|)"]
+```
+
+## Introduction
+
+Rainfall in California varies from year to year with weather patterns in the tropical Pacific. The El Niño–Southern Oscillation (ENSO), a coupled pattern of tropical Pacific ocean temperatures and air pressure, is the one climate signal widely believed to foreshadow the state's wet and dry years.
+
+This report asks the following research question.
+
+> **What is the relationship between the intensity of ENSO and total statewide precipitation in California over the corresponding water year?**
+
+Describing this relationship is valuable on its own terms. It tells the public and planners in government and utilities (the Bureau of Reclamation, the California Department of Water Resources, and PG&E) what history actually says about ENSO. Prior research documents the qualitative pattern, in which El Niño tends to bring wetter-than-normal conditions to California and La Niña the inverse (Cayan, Redmond & Dettinger 1999, Redmond & Koch 1991, Schonher & Nicholson 1989), with stronger associations in Southern California (Jong, Ting & Seager 2016). Yet the relationship is famously non-deterministic, and recent years were unexpectedly wet despite La Niña (Guirguis et al. 2024). Our contribution is to put statewide, water-year-level numbers on that pattern. We deliberately make no causal or predictive claims.
+
+## Data
+
+### Provenance
+
+- **California statewide precipitation** (`precip_in`): Total California water-year precipitation (inches) from NOAA Climate at a Glance.
+- **Oceanic Niño Index** (`oni_djf`): NOAA's December–February Oceanic Niño Index (ONI), averaged within each water year. Phase indicators, strength categories, a one-year lag, and a time trend were derived from this series.
+- **Southern Oscillation Index** (`rsoi`): November–March SOI multiplied by -1 so that positive values correspond to El Niño conditions.
+
+**Index calculations.** ENSO intensity is measured using NOAA's Oceanic Niño Index (ONI), defined as the December–February average sea-surface temperature anomaly in the Niño 3.4 region. We also retain a reversed Southern Oscillation Index (SOI) as an alternative operationalization. Detailed definitions are provided in the appendix.
+
+### Operationalization
+
+**Precipitation concept** $\to$ `precip_in`. Statewide water-year totals are the standard measure for "how wet was California's year," and the water year cleanly contains one winter storm season.
+
+**ENSO intensity concept** $\to$ `oni_djf`. We make use of the Oceanic Niño Index (ONI) as the ENSO measure because it is NOAA’s operational ENSO indicator and represents intensity as a continuous sea surface temperature anomaly (°C). ENSO categories are used not as model predictors, but for visualizations. All 76 water years have complete observations, Model 3 using the previous winter ONI and therefore has n equaling 75 due to the missing value for WY1950.
+
+## The Shape of the Data
+
+The rest of the report describes the joint distribution of winter ENSO intensity and water-year precipitation, starting from the raw ingredients. Table 2 shows the statistics for the outcome and the three ENSO measures.
+
+```{r descriptive-table}
+
+d |>
+  select(
+    `Precipitation (in)`       = precip_in,
+    `ONI (Dec-Feb, °C)`        = oni_djf,
+    `Previous winter ONI (°C)` = oni_djf_lag1
+  ) |>
+  pivot_longer(everything(), names_to = "Variable") |>
+  group_by(Variable) |>
+  summarise(
+    N      = sum(!is.na(value)),
+    Mean   = mean(value, na.rm = TRUE),
+    SD     = sd(value, na.rm = TRUE),
+    Min    = min(value, na.rm = TRUE),
+    Median = median(value, na.rm = TRUE),
+    Max    = max(value, na.rm = TRUE)
+  ) |>
+  arrange(factor(Variable, levels = c(
+    "Precipitation (in)", "ONI (Dec-Feb, °C)",
+    "Reversed SOI (Nov-Mar)", "Previous winter ONI (°C)"
+  ))) |>
+  knitr::kable(
+    digits = 2,
+    caption = "Descriptive statistics for the analysis variables, WY 1950-2025. The lagged ONI has 75 observations because it is undefined for the first sample year."
+  )
+```
+
+The full 76-year history complicates the expectation that El Niño years are wet years, because the wettest columns below are not all El Niño. The record winters of 1983 and 1998 were very strong El Niños, but 2017, the fourth-wettest year, was Neutral. The very strong El Niño winter of 2016 coincided with a roughly average year, and the driest year on record, 1977, was itself a weak El Niño.
+
+```{r history-figure, fig.height=3.0, fig.cap="California statewide water-year precipitation, 1950-2025, colored by ENSO phase. The wettest years are not uniformly El Niño years, previewing the noisy relationship the models quantify."}
+famous_years <- filter(d, water_year %in% c(1977, 1983, 1998, 2016, 2017))
+
+d |>
+  ggplot() +
+  aes(x = water_year, y = precip_in) +
+  geom_col(aes(fill = enso_phase), width = 0.8) +
+  geom_text(
+    data = famous_years,
+    aes(label = water_year),
+    nudge_y = 1.8, size = 2.6, color = "grey20"
+  ) +
+  scale_fill_manual(values = phase_colors) +
+  scale_x_continuous(breaks = seq(1950, 2020, 10)) +
+  labs(
+    x = "Water year", y = "Precipitation (inches)",
+    title = "Statewide precipitation by water year and ENSO phase",
+    fill = "ENSO phase"
+  ) +
+  theme(legend.position = "bottom")
+```
+
+
+```{r phase-summary}
+
+d |>
+  group_by(`ENSO phase (ONI, DJF)` = enso_phase) |>
+  summarise(
+    `Water years`   = n(),
+    `Mean precip (in)` = mean(precip_in),
+    `SD (in)`  = sd(precip_in),
+    `Driest (in)`  = min(precip_in),
+    `Wettest (in)` = max(precip_in)
+  ) |>
+  knitr::kable(
+    digits = 1,
+    caption = "Statewide water-year precipitation by ENSO phase. El Niño years average 3 or more inches wetter but are also markedly more variable."
+  )
+```
+
+```{r el-nino-t-test, include=FALSE}
+
+t_el <- t.test(precip_in ~ enso_phase == "El Niño", data = d)
+mean_diff <- diff(t_el$estimate)
+
+# Plain scalars for the prose (see the hoisting note in the estimate-models chunk).
+t_el_stat <- abs(unname(t_el$statistic))
+t_el_p    <- t_el$p.value
+sd_elnino <- sd(d$precip_in[d$enso_phase == "El Niño"])
+sd_other  <- mean(c(
+  sd(d$precip_in[d$enso_phase == "La Niña"]),
+  sd(d$precip_in[d$enso_phase == "Neutral"])
+))
+```
+
+A simple comparison of group means offers only partial support for the expectation that El Niño years are wet years. On average, El Niño years received `r round(abs(mean_diff), 1)` more inches of precipitation than the other years taken as a group, but the difference is not statistically significant at the 5% level (Welch two-sample t-test, $|t| = `r round(t_el_stat, 2)`$, two-sided $p = `r round(t_el_p, 3)`$). Because collapsing ENSO into categories discards information about event intensity, the regression models below work with the full metric index instead. Table 3 also shows that El Niño years are the most *variable* (SD `r round(sd_elnino, 1)` inches, versus roughly `r round(sd_other, 1)` for the other phases), a first sign of the heteroskedasticity the models will need to address.
+
+## The ENSO–Precipitation Relationship
+
+```{r main-figure, fig.height=3.6, fig.cap="California water-year precipitation against winter ONI, WY 1950-2025, colored and shaped by NOAA ENSO phase. The solid line is the simple OLS fit (Model 1) and the dashed curve is the log-linear fit (Model 4) transformed back to inches (a geometric-mean prediction, slightly below the arithmetic mean). Both show a modest upward relationship, and the fanning of points at high ONI shows El Niño years are more variable."}
+
+pred_grid <- tibble(oni_djf = seq(min(d$oni_djf), max(d$oni_djf), length.out = 200))
+pred_grid$`Linear fit (Model 1)` <- predict(model_linear, newdata = pred_grid)
+pred_grid$`Log-linear fit (Model 4)` <- exp(predict(model_log, newdata = pred_grid))
+pred_grid <- pred_grid |>
+  pivot_longer(-oni_djf, names_to = "model", values_to = "fit")
+
+ggplot(d) +
+  aes(x = oni_djf, y = precip_in) +
+  geom_point(aes(color = enso_phase, shape = enso_phase), size = 2.2, alpha = 0.9) +
+  geom_line(
+    data = pred_grid,
+    aes(y = fit, linetype = model),
+    color = "grey20", linewidth = 0.6
+  ) +
+  scale_color_manual(values = phase_colors) +
+  scale_shape_manual(values = phase_shapes) +
+  scale_linetype_manual(values = c("Linear fit (Model 1)" = "solid",
+                                   "Log-linear fit (Model 4)" = "dashed")) +
+  labs(
+    x = "Winter ONI (°C of Niño 3.4 SST anomaly, Dec-Feb)",
+    y = "Water-year precipitation (inches)",
+    title = "Precipitation against winter ONI, with fitted models",
+    subtitle = "Each point is one California water year, 1950-2025",
+    color = "ENSO phase", shape = "ENSO phase", linetype = NULL
+  ) +
+  theme(legend.position = "right")
+```
+
+## Regression Models
+
+Stargazer
+
+## Regression Assumptions
+
+**1. IID sampling.** 
+
+**2. No perfect collinearity.**
+
+**3. Linear conditional expectation.**
+
+**4. Homoskedastic errors.**
+
+**5. Normally distributed errors.**
+
+## Results and Practical Significance
+
+**Statistical significance.**
+
+**Practical significance.**
+
+## Conclusion
+
+
+\newpage
+
+## Appendix
+
+### A.1 References
+
+- Cayan, D. R., Redmond, K. T., and Dettinger, M. D. (1999). ENSO and hydrologic extremes in the western United States. *Journal of Climate*.
+- Guirguis, K., et al. (2024). Reinterpreting ENSO's role in modulating impactful precipitation events in California. *Geophysical Research Letters*.
+- Jong, B.-T., Ting, M., and Seager, R. (2016). El Niño's impact on California precipitation: seasonality, regionality, and El Niño intensity. *Environmental Research Letters*.
+- NOAA National Centers for Environmental Information. *El Niño/Southern Oscillation (ENSO): Southern Oscillation Index (SOI) calculation.* <https://www.ncei.noaa.gov/access/monitoring/enso/soi> (accessed August 2026).
+- Redmond, K. T., and Koch, R. W. (1991). Surface climate and streamflow variability in the western United States and their relationship to large-scale circulation indices. *Water Resources Research*.
+- Schonher, T., and Nicholson, S. E. (1989). The relationship of California rainfall to ENSO events. *Journal of Climate*.
+
+### A.2 Data Sources
+
+- California statewide water-year precipitation comes from NOAA NCEI, *Climate at a Glance, Statewide Time Series*, as 12-month totals ending September (<https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/statewide/time-series>). The raw download is preserved verbatim at `src/data_rainfall.csv`.
+- The Oceanic Niño Index (ONI) comes from NOAA Climate Prediction Center data retrieved with the `rsoi` R package (`rsoi::download_oni()`), processed to one row per water year in `src/oni_djf_wateryear.csv` (index reference <https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt>).
+- The Southern Oscillation Index (SOI) comes from the NOAA Climate Prediction Center, <https://www.cpc.ncep.noaa.gov/data/indices/soi> (Nov–Mar reversed-SOI columns in `src/data/ca_rainfall_rsoi_merged.csv`).
+- GHCN-Daily station metadata, the measurement network behind the statewide series, comes from NOAA NCEI, <https://www.ncei.noaa.gov/pub/data/ghcn/daily/> (`ghcnd-stations.txt` and `ghcnd-inventory.txt`, with raw copies in `src/`), parsed to `data/processed/ca_prcp_stations.csv` and `data/processed/ca_prcp_station_coverage.csv` by `src/data/make_station_coverage.R`.
+- The data dictionary `src/data_dictionary.csv` (rendered as `src/datadictionary.png`) documents every variable's type, units, range, source, and derivation.
+- The pipeline script `src/data/make_analysis_data.R` reads the raw precipitation file and the two ENSO files, validates the merge (76 water years, raw values cross-checked), and writes the single canonical analysis file `data/processed/ca_enso_analysis.csv` that this report uses.
+
+```{=latex}
+\newpage
+\begin{landscape}
+```
+
+### A.5 Data Dictionary
+
+```{r data-dictionary-table}
+# The team's variable-level documentation (Data/data_dictionary.csv), rendered
+# so the appendix is self-contained [assignment prompt - rubric: no output
+# dumps]. format = "pipe" lets pandoc wrap the long description text in PDF.
+read.csv("Data/data_dictionary.csv") |>
+  select(
+    Variable = variable, Type = type, Units = units,
+    `Range / levels` = range_or_levels, Description = description
+  ) |>
+  knitr::kable(
+    format = "pipe",
+    caption = "Data dictionary for the canonical analysis file (from Data/data_dictionary.csv)."
+  )
+```
+
+```{=latex}
+\end{landscape}
+```
+
