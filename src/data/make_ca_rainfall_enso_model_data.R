@@ -110,3 +110,25 @@ write.csv(out, OUT, row.names = FALSE, na = "NA", quote = FALSE)
 message("Wrote ", OUT, ": ", nrow(out), " region-months (",
         sum(out$region == "NorCal"), " NorCal / ",
         sum(out$region == "SoCal"), " SoCal)")
+
+# ---- 6. Sanity-check scatter: monthly precipitation vs ONI -----------
+# A quick visual of the project's core relationship -- do wetter months
+# line up with higher ONI (El Nino)? Written to a PNG (base graphics) so
+# it also works when the script is run non-interactively via Rscript.
+FIG <- here::here("reports", "figures", "precip_vs_oni.png")
+dir.create(dirname(FIG), showWarnings = FALSE, recursive = TRUE)
+
+plot_df    <- out[!is.na(out$oni), ]                 # ONI is NA before 1950
+region_col <- c(NorCal = "#2a78d6", SoCal = "#eb6834")
+
+png(FIG, width = 1800, height = 1200, res = 300)
+plot(plot_df$oni, plot_df$prcp,
+     col  = region_col[plot_df$region], pch = 19, cex = 0.4,
+     xlab = "Monthly Oceanic Nino Index (ONI, deg C)",
+     ylab = "Monthly mean station precipitation (mm)",
+     main = "California monthly precipitation vs ENSO (ONI)")
+abline(v = c(-0.5, 0.5), lty = 3, col = "grey60")    # El Nino / La Nina cutoffs
+legend("topright", legend = names(region_col),
+       col = region_col, pch = 19, bty = "n")
+invisible(dev.off())
+message("Wrote ", FIG)
