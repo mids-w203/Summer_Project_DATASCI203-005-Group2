@@ -117,7 +117,7 @@ Describing this relationship is valuable on its own terms. It tells the public a
 
 ### Provenance
 
-- **California statewide precipitation** (`precip_in`): Total California water-year precipitation (inches) from NOAA Climate at a Glance.
+- **California statewide precipitation** (`precip_in`): Total California water-year (October–September) precipitation, in inches. Our intended source was NOAA's Climate at a Glance statewide series, but that service was returning HTTP 503 throughout the analysis period. We therefore construct the outcome directly from NOAA GHCN-Daily station records: for each water year we total each station's monthly precipitation, keep only stations reporting all twelve months, and average across the `r round(mean(d$n_stations))` stations (median) available that year. This is a station average rather than an area-weighted statewide value, so its level runs roughly one inch higher than the published statewide figure; the ENSO relationship this report describes is materially unchanged (correlation with winter ONI of `r cor_oni_fmt` against 0.257 for the published series). The pipeline prefers the official file automatically if it is placed in `data/external/`.
 - **Oceanic Niño Index** (`oni_djf`): NOAA's December–February Oceanic Niño Index (ONI), averaged within each water year. Phase indicators, strength categories, a one-year lag, and a time trend were derived from this series.
 - **Southern Oscillation Index** (`rsoi`): November–March SOI multiplied by -1 so that positive values correspond to El Niño conditions.
 
@@ -131,7 +131,7 @@ Describing this relationship is valuable on its own terms. It tells the public a
 
 ## The Shape of the Data
 
-The rest of the report describes the joint distribution of winter ENSO intensity and water-year precipitation, starting from the raw ingredients. Table 2 shows the statistics for the outcome and the three ENSO measures.
+The rest of the report describes the joint distribution of winter ENSO intensity and water-year precipitation, starting from the raw ingredients. Table 1 shows the statistics for the outcome and the ENSO measures.
 
 ```{r descriptive-table}
 
@@ -161,7 +161,7 @@ d |>
   )
 ```
 
-The full 76-year history complicates the expectation that El Niño years are wet years, because the wettest columns below are not all El Niño. The record winters of 1983 and 1998 were very strong El Niños, but 2017, the fourth-wettest year, was Neutral. The very strong El Niño winter of 2016 coincided with a roughly average year, and the driest year on record, 1977, was itself a weak El Niño.
+The full 76-year history complicates the expectation that El Niño years are wet years, because the wettest columns below are not all El Niño. The record winters of 1983 and 1998 were very strong El Niños, but 2017, the fourth-wettest year, was Neutral. The very strong El Niño winter of 2016 coincided with a roughly average year, and the second-driest year on record, 1977, was itself a weak El Niño.
 
 ```{r history-figure, fig.height=3.0, fig.cap="California statewide water-year precipitation, 1950-2025, colored by ENSO phase. The wettest years are not uniformly El Niño years, previewing the noisy relationship the models quantify."}
 famous_years <- filter(d, water_year %in% c(1977, 1983, 1998, 2016, 2017))
@@ -218,7 +218,7 @@ sd_other  <- mean(c(
 ))
 ```
 
-A simple comparison of group means offers only partial support for the expectation that El Niño years are wet years. On average, El Niño years received `r round(abs(mean_diff), 1)` more inches of precipitation than the other years taken as a group, but the difference is not statistically significant at the 5% level (Welch two-sample t-test, $|t| = `r round(t_el_stat, 2)`$, two-sided $p = `r round(t_el_p, 3)`$). Because collapsing ENSO into categories discards information about event intensity, the regression models below work with the full metric index instead. Table 3 also shows that El Niño years are the most *variable* (SD `r round(sd_elnino, 1)` inches, versus roughly `r round(sd_other, 1)` for the other phases), a first sign of the heteroskedasticity the models will need to address.
+A simple comparison of group means offers only partial support for the expectation that El Niño years are wet years. On average, El Niño years received `r round(abs(mean_diff), 1)` more inches of precipitation than the other years taken as a group, but the difference is not statistically significant at the 5% level (Welch two-sample t-test, $|t| = `r round(t_el_stat, 2)`$, two-sided $p = `r round(t_el_p, 3)`$). Because collapsing ENSO into categories discards information about event intensity, the regression models below work with the full metric index instead. Table 2 also shows that El Niño years are the most *variable* (SD `r round(sd_elnino, 1)` inches, versus roughly `r round(sd_other, 1)` for the other phases), a first sign of the heteroskedasticity the models will need to address.
 
 ## The ENSO–Precipitation Relationship
 
@@ -254,27 +254,202 @@ ggplot(d) +
 
 ## Regression Models
 
-Stargazer
+We estimate four models. Each one asks a different question of the same
+76 water years, and reading them together is what separates a robust
+description from an artifact of one specification.
+
+| Model | Specification | Question it answers |
+|-------|---------------|---------------------|
+| 1 | `precip_in ~ oni_djf` | Is there a linear ENSO--precipitation association? |
+| 2 | `precip_in ~ el_nino + la_nina` | What does collapsing intensity into categories cost? |
+| 3 | `precip_in ~ oni_djf + oni_djf_lag1 + time_trend` | Is the association confounded by last winter's ENSO or by trend? |
+| 4 | `log(precip_in) ~ oni_djf` | Is the relationship proportional rather than additive? |
+
+```{r model-table, results='asis'}
+stargazer(
+  model_linear, model_phase, model_lagtrend, model_log,
+  se               = lapply(list(model_linear, model_phase,
+                                 model_lagtrend, model_log), get_robust_se),
+  type             = "latex",
+  header           = FALSE,
+  title            = "ENSO intensity and California water-year precipitation. Models 1-3 are in inches; Model 4's outcome is log inches, so its coefficient is a proportional effect and its R-squared is not comparable to the others.",
+  dep.var.labels   = c("Precipitation (in)", "log(Precipitation)"),
+  column.labels    = c("M1", "M2", "M3", "M4"),
+  model.numbers    = FALSE,
+  covariate.labels = c("Winter ONI", "El Nino", "La Nina",
+                       "Previous winter ONI", "Time trend"),
+  omit.stat        = c("f", "ser"),
+  notes            = "HC1 heteroskedasticity-robust standard errors.",
+  notes.align      = "l",
+  font.size        = "small"
+)
+```
+
+Model 1 is the headline. A one-degree increase in winter ONI is associated
+with `r sprintf("%.2f", slope_linear)` additional inches of water-year
+precipitation (robust SE `r sprintf("%.2f", slope_rob_se)`,
+$p = `r sprintf("%.3f", p_linear_rob)`$), but it accounts for only
+`r sprintf("%.1f", 100 * r2_linear)`% of the variation in how wet
+California's year is.
+
+The remaining models each reinforce that reading. Model 2 shows what
+categories cost: neither the El Nino indicator
+(`r sprintf("%.2f", elnino_coef)` inches, $p = `r sprintf("%.3f", elnino_p)`$)
+nor the La Nina indicator reaches significance, and $R^2$ falls to
+`r sprintf("%.3f", summary(model_phase)$r.squared)` -- discarding intensity
+discards real signal. Model 3 shows the association is not an artifact of
+persistence or trend: the contemporaneous ONI coefficient is essentially
+unchanged at `r sprintf("%.2f", oni_m3_coef)`
+($p = `r sprintf("%.3f", oni_m3_p)`$) once the previous winter's ONI and a
+linear time trend are included, and the trend itself is flat
+($p = `r sprintf("%.3f", trend_p)`$). Model 4 restates the relationship
+proportionally: each degree of ONI corresponds to roughly
+`r sprintf("%.1f", pct_per_oni)`% more precipitation
+($p = `r sprintf("%.3f", p_log_rob)`$).
 
 ## Regression Assumptions
 
-**1. IID sampling.** 
+```{r assumption-tests, include=FALSE}
+bp_lvl <- bptest(model_linear)
+bp_log <- bptest(model_log)
+bg2    <- bgtest(model_linear, order = 2)
+sw_lvl <- shapiro.test(residuals(model_linear))
+sw_log <- shapiro.test(residuals(model_log))
+e1     <- residuals(model_linear)
+lag1_r <- cor(head(e1, -1), tail(e1, -1))
+vif_m3 <- car::vif(model_lagtrend)
+```
 
-**2. No perfect collinearity.**
+**1. IID sampling.** Water years are not drawn independently: ENSO is a
+physical system with memory, so a wet regime can persist. This is the
+assumption most at risk, and we test it directly rather than assert it. The
+lagged ONI is strongly autocorrelated
+($r = `r sprintf("%.2f", oni_lag_r)`$), but what matters for inference is
+the *residuals*. A Breusch--Godfrey test finds no serial correlation
+($p = `r sprintf("%.3f", bg2$p.value)`$) and the lag-1 residual correlation
+is `r sprintf("%.3f", lag1_r)`. The ENSO signal, not the errors, carries
+the persistence -- so OLS standard errors are not being inflated by
+autocorrelation. The sample is nonetheless a single realization of one
+climate system, which is why we describe rather than infer causally.
 
-**3. Linear conditional expectation.**
+**2. No perfect collinearity.** R would drop a perfectly collinear term,
+and none was dropped. In Model 3 the variance inflation factors are all
+approximately `r sprintf("%.2f", max(vif_m3))`, effectively no
+multicollinearity: winter ONI, the previous winter's ONI, and the time
+trend carry nearly independent information.
 
-**4. Homoskedastic errors.**
+**3. Linear conditional expectation.** Figure 2 shows the scatter with both
+the linear and log-linear fits. The points are diffuse but show no
+curvature that a straight line systematically misses, and the residual plot
+below is centered on zero across the fitted range. A linear conditional
+expectation is defensible; it is simply a weak one.
 
-**5. Normally distributed errors.**
+**4. Homoskedastic errors.** This assumption **fails** in levels. El Nino
+years are markedly more variable than other years (Table 2), and a
+Breusch--Pagan test rejects homoskedasticity
+($p = `r sprintf("%.3f", bp_lvl$p.value)`$). We therefore report **HC1
+robust standard errors throughout**, which is why the Model 1 standard
+error is `r sprintf("%.0f", se_pct_larger)`% larger than the classical one.
+The log transform largely resolves the problem
+($p = `r sprintf("%.3f", bp_log$p.value)`$), which is an independent reason
+to report Model 4.
+
+**5. Normally distributed errors.** Precipitation is right-skewed
+(skewness `r sprintf("%.2f", skew_precip)`), and Shapiro--Wilk rejects
+normality of the Model 1 residuals
+($p = `r sprintf("%.3f", sw_lvl$p.value)`$). The log transform pulls the
+outcome close to symmetric (skewness
+`r sprintf("%.2f", skew_log_precip)`; Shapiro--Wilk
+$p = `r sprintf("%.3f", sw_log$p.value)`$). With $n = 76$ the central limit
+theorem gives some protection, but this is a genuine limitation and the
+reason we treat Model 4's proportional statement as the more trustworthy
+of the two functional forms.
+
+```{r diag-plots, fig.height=2.9, fig.cap="Model 1 diagnostics. Left: residuals against fitted values, showing the wider spread at high fitted values that the Breusch-Pagan test detects. Right: normal Q-Q plot, with departures in both tails reflecting the right-skewed outcome."}
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1), cex = 0.7)
+plot(fitted(model_linear), residuals(model_linear), pch = 20,
+     xlab = "Fitted (inches)", ylab = "Residual", main = "Residuals vs fitted")
+abline(h = 0, lty = 2, col = "grey50")
+qqnorm(residuals(model_linear), pch = 20, main = "Normal Q-Q")
+qqline(residuals(model_linear), col = "grey50")
+par(mfrow = c(1, 1))
+```
 
 ## Results and Practical Significance
 
-**Statistical significance.**
+**Statistical significance.** The association between winter ENSO intensity
+and California water-year precipitation is positive and statistically
+significant at the 5% level, but only just: Model 1 gives
+$p = `r sprintf("%.3f", p_linear_rob)`$ with robust standard errors, and
+the proportional version in Model 4 sits just outside conventional
+significance ($p = `r sprintf("%.3f", p_log_rob)`$). The finding survives
+the controls in Model 3 but does not survive being collapsed into
+categories in Model 2. A reader should conclude that the relationship is
+real and consistently signed, not that it is firmly established.
 
-**Practical significance.**
+```{r practical-table}
+b1 <- slope_linear
+scen <- c("One SD increase in winter ONI" = sd(d$oni_djf),
+          "Strong El Nino (ONI = +1.5)"   =  1.5,
+          "Strong La Nina (ONI = -1.5)"   = -1.5)
+
+tibble(
+  Scenario               = names(scen),
+  `Change (in)`          = b1 * scen,
+  `As % of mean`         = 100 * b1 * scen / mean_precip,
+  `As % of SD`           = 100 * b1 * scen / sd_precip
+) |>
+  knitr::kable(
+    digits = 1,
+    caption = "Effect sizes implied by Model 1. The last column is the one that matters for planning: it compares the ENSO signal against the year-to-year noise it must be detected within."
+  )
+```
+
+**Practical significance.** The effect is real but small relative to the
+noise a water manager actually faces. A one-standard-deviation swing in
+winter ONI moves expected precipitation by
+`r sprintf("%.1f", b1 * sd(d$oni_djf))` inches --
+`r sprintf("%.0f", 100 * b1 * sd(d$oni_djf) / mean_precip)`% of the average
+year, but only
+`r sprintf("%.0f", 100 * b1 * sd(d$oni_djf) / sd_precip)`% of a standard
+deviation of annual precipitation. Put the two extremes side by side: the
+expected gap between a strong El Nino and a strong La Nina is about
+`r sprintf("%.1f", b1 * 3)` inches, against a year-to-year standard
+deviation of `r sprintf("%.1f", sd_precip)` inches. ENSO shifts the
+distribution; it does not determine the outcome.
+
+That asymmetry is the practical message. Table 2 makes it concrete: El Nino
+years average `r sprintf("%.1f", mean(d$precip_in[d$enso_phase == "El Niño"]))`
+inches against `r sprintf("%.1f", mean(d$precip_in[d$enso_phase == "La Niña"]))`
+for La Nina years, yet the wettest La Nina year on record still exceeded
+the average El Nino year. Planning that treats an El Nino forecast as a
+guarantee of a wet year is not supported by 76 years of evidence.
 
 ## Conclusion
+
+Across four specifications, winter ENSO intensity is positively associated
+with California water-year precipitation. The central estimate is
+`r sprintf("%.2f", slope_linear)` inches per degree of winter ONI
+(equivalently about `r sprintf("%.0f", pct_per_oni)`% more precipitation
+per degree), it is statistically significant at the 5% level under robust
+standard errors, and it is unchanged by controls for the previous winter's
+ENSO state and for trend.
+
+The more useful finding, though, is how *little* of California's
+hydrological variability this explains --
+`r sprintf("%.1f", 100 * r2_linear)`% in Model 1. The historical record
+contains very strong El Nino winters that produced ordinary years and
+neutral winters that produced near-record ones. For the agencies that
+motivated this question, the honest summary is that ENSO is a genuine but
+weak tilt in the odds: useful as one input among many for water-supply
+planning, and not sufficient on its own to anticipate a wet or dry year.
+
+We make no causal claim. ENSO is not randomly assigned, our sample is a
+single realization of one climate system observed over 76 years, and the
+outcome is a statewide aggregate that averages over the strong regional
+differences documented in prior work (Jong, Ting & Seager 2016). What this
+report establishes is the shape and size of a historical association, which
+is what a descriptive analysis can honestly deliver.
 
 
 \newpage
@@ -292,12 +467,14 @@ Stargazer
 
 ### A.2 Data Sources
 
-- California statewide water-year precipitation comes from NOAA NCEI, *Climate at a Glance, Statewide Time Series*, as 12-month totals ending September (<https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/statewide/time-series>). The raw download is preserved verbatim at `src/data_rainfall.csv`.
-- The Oceanic Niño Index (ONI) comes from NOAA Climate Prediction Center data retrieved with the `rsoi` R package (`rsoi::download_oni()`), processed to one row per water year in `src/oni_djf_wateryear.csv` (index reference <https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt>).
-- The Southern Oscillation Index (SOI) comes from the NOAA Climate Prediction Center, <https://www.cpc.ncep.noaa.gov/data/indices/soi> (Nov–Mar reversed-SOI columns in `src/data/ca_rainfall_rsoi_merged.csv`).
-- GHCN-Daily station metadata, the measurement network behind the statewide series, comes from NOAA NCEI, <https://www.ncei.noaa.gov/pub/data/ghcn/daily/> (`ghcnd-stations.txt` and `ghcnd-inventory.txt`, with raw copies in `src/`), parsed to `data/processed/ca_prcp_stations.csv` and `data/processed/ca_prcp_station_coverage.csv` by `src/data/make_station_coverage.R`.
-- The data dictionary `src/data_dictionary.csv` (rendered as `src/datadictionary.png`) documents every variable's type, units, range, source, and derivation.
-- The pipeline script `src/data/make_analysis_data.R` reads the raw precipitation file and the two ENSO files, validates the merge (76 water years, raw values cross-checked), and writes the single canonical analysis file `data/processed/ca_enso_analysis.csv` that this report uses.
+The whole pipeline is reproducible from a single command, `Rscript src/data/make_analysis_data.R`, which rebuilds every input from source and writes the one file this report reads.
+
+- **Precipitation.** The intended source was NOAA NCEI, *Climate at a Glance, Statewide Time Series*, as 12-month totals ending September (<https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/statewide/time-series>). That service returned HTTP 503 throughout the analysis period, so `src/data/make_ca_wateryear_precip.R` falls back to a composite built from NOAA GHCN-Daily station records (`data/external/ca_monthly_rainfall.csv`), summing each station's twelve monthly totals per water year and averaging across stations. The script prefers the official series automatically whenever `data/external/data_rainfall.csv` is present, and the `precip_source` column in the analysis file records which was used.
+- **Oceanic Niño Index (ONI).** Read directly from the NOAA Climate Prediction Center table at <https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt>, preserved raw at `data/external/oni_download.txt` and reduced to one row per water year by `src/data/make_oni_djf_wateryear.R` (`data/interim/oni_djf_wateryear.csv`). We read CPC directly rather than via the `rsoi` package because `rsoi` recomputes ONI as a rolling three-month mean and therefore cannot produce the DJF window for WY1950.
+- **Southern Oscillation Index (SOI).** From the NOAA Climate Prediction Center, <https://www.cpc.ncep.noaa.gov/data/indices/soi>, preserved raw at `data/external/soi_download.txt` and reduced to the Nov–Mar reversed-SOI series by `src/data/make_soi_wateryear.R` (`data/interim/soi_ndjfm_wateryear.csv`).
+- **GHCN-Daily station metadata**, the measurement network behind the precipitation composite, comes from NOAA NCEI, <https://www.ncei.noaa.gov/pub/data/ghcn/daily/>, with the California station list at `data/external/ca_station_list.csv`.
+- **Merge and validation.** `src/data/make_analysis_data.R` joins the three interim files on water year and refuses to write unless the result is a complete consecutive run of 76 water years with no missing values in either analysis variable, mutually exclusive phase indicators, and exactly one missing lagged ONI (WY1950). It writes the canonical `data/processed/ca_enso_analysis.csv`.
+- **Data dictionary.** `references/data_dictionary.csv` (rendered as `references/datadictionary.png`) documents every variable's type, units, range, source, and derivation, including all thirteen columns of the canonical analysis file.
 
 ```{=latex}
 \newpage
