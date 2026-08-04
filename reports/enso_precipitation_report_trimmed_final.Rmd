@@ -254,7 +254,32 @@ ggplot(d) +
 
 ## Regression Models
 
-Stargazer
+stargazer(
+  model_linear, model_phase, model_lagtrend, model_log,
+  se = list(
+    ct_linear[, "Std. Error"],  ct_phase[, "Std. Error"],
+    ct_lagtrend[, "Std. Error"], ct_log[, "Std. Error"]
+  ),
+  p = list(
+    ct_linear[, "Pr(>|t|)"],  ct_phase[, "Pr(>|t|)"],
+    ct_lagtrend[, "Pr(>|t|)"], ct_log[, "Pr(>|t|)"]
+  ),
+  type = "latex", header = FALSE, table.placement = "H",
+  title = "Four models describing the ENSO - recipitation relationship, Water years 1950-2025.",
+  label = "tab:models",
+  dep.var.labels = c("Water-year precipitation (in)", "log(precipitation)"),
+  column.labels = c("Linear", "Phase", "Lag + trend", "Log-linear"),
+  covariate.labels = c(
+    "Winter ONI ($^{\\circ}$C)",
+    "El Ni\\~no (vs.\\ Neutral)", "La Ni\\~na (vs.\\ Neutral)",
+    "Previous winter ONI ($^{\\circ}$C)", "Linear time trend",
+    "Constant"
+  ),
+  omit.stat = c("f", "ser"),
+  digits = 2, no.space = TRUE, font.size = "small",
+  notes = "HC1 robust standard errors in parentheses.",
+  notes.append = TRUE
+)
 
 ## Regression Assumptions
 
