@@ -2,7 +2,7 @@
 # Data: version control is for code, not data (per assignment guidance).
 # NOTE: files already committed stay tracked until you `git rm --cached` them.
 # ---------------------------------------------------------------------------
-data/**/*.csv
+# data/**/*.csv
 data/**/*.tsv
 data/**/*.xlsx
 data/**/*.rds
