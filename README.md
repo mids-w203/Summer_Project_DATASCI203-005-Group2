@@ -14,10 +14,10 @@ How do El Niño / La Niña phases of ENSO affect rainfall patterns in the state 
 
 | Concept | Operationalization |
 | --- | --- |
-| **X** (ENSO phase and intensity) | Historical Southern Oscillation Index (SOI) and Oceanic Niño Index (ONI) |
-| **Y** (California rainfall) | Historical precipitation totals, with average temperature and reservoir storage as additional considerations |
+| **X** (ENSO intensity) | Winter (Dec–Feb) Oceanic Niño Index (ONI), the primary measure; reversed Southern Oscillation Index (SOI) retained as an alternative operationalization |
+| **Y** (California rainfall) | Total statewide precipitation over the corresponding water year (inches) |
 
-**Unit of observation:** Month — each row pairs a monthly ENSO measurement with monthly California rainfall totals.
+**Unit of observation:** Water year (Oct 1–Sep 30) — each row pairs one winter's ENSO intensity with that water year's total statewide California precipitation. The analysis covers WY1950–2025 (76 water years).
 
 Prior work documents a clear pattern: El Niño tends to bring wetter-than-normal conditions to California and La Niña the inverse (Cayan et al., 1999; Redmond & Koch, 1991; Schonher & Nicholson, 1989), with stronger effects in Southern California (Jong et al., 2016). The relationship is not deterministic — recent years were unexpectedly wet despite La Niña (Guirguis et al., 2024) — which motivates further analysis with linear models.
 
@@ -29,8 +29,8 @@ Prior work documents a clear pattern: El Niño tends to bring wetter-than-normal
 
 ## Key Variables
 
-- **X:** Monthly SOI score; ONI / sea surface temperature
-- **Y:** Monthly precipitation totals, with average temperature and reservoir storage
+- **X:** Winter (Dec–Feb) ONI sea-surface-temperature anomaly; reversed (Nov–Mar) SOI as an alternative
+- **Y:** Water-year total statewide precipitation (inches)
 
 ## Data Sources
 

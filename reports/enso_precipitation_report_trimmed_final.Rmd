@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
   dpi = 300, fig.width = 6.5, fig.height = 3.1, fig.align = "center"
 )
 
+library(here)
 library(tidyverse)
 library(patchwork)
 library(sandwich)
@@ -47,7 +48,7 @@ phase_shapes <- c("La Niña" = 17, "Neutral" = 16, "El Niño" = 15)
 ```
 
 ```{r load-data, include=FALSE}
-d <- read.csv("Data/ca_enso_analysis.csv") |>
+d <- read.csv(here("data", "processed", "ca_enso_analysis.csv")) |>
   mutate(
     enso_phase = factor(enso_phase, levels = c("La Niña", "Neutral", "El Niño")),
     phase      = factor(phase,      levels = c("La Niña", "Neutral", "El Niño"))
@@ -309,7 +310,7 @@ Stargazer
 # The team's variable-level documentation (Data/data_dictionary.csv), rendered
 # so the appendix is self-contained [assignment prompt - rubric: no output
 # dumps]. format = "pipe" lets pandoc wrap the long description text in PDF.
-read.csv("Data/data_dictionary.csv") |>
+read.csv(here("references", "data_dictionary.csv")) |>
   select(
     Variable = variable, Type = type, Units = units,
     `Range / levels` = range_or_levels, Description = description
