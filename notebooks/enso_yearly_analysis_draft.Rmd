@@ -58,8 +58,8 @@ oni <- read_csv(ONI_PATH, col_types = cols(
 )) %>%
   mutate(
     enso_phase = factor(enso_phase,
-                        levels = c("neutral", "el_nino", "la_nina"),
-                        labels = c("Neutral", "El Nino", "La Nina"))
+                        levels = c("la_nina", "neutral", "el_nino"),
+                        labels = c("La Niña", "Neutral", "El Niño"))
   )
 ```
 
@@ -211,9 +211,12 @@ cat(sprintf("Welch two-sample t-test, El Nino years vs all others: t = %.2f, df 
 ```{r fig-series, fig.cap="Statewide water-year precipitation, coloured by ENSO phase."}
 ggplot(df, aes(x = water_year, y = precip_in, fill = enso_phase)) +
   geom_col() +
-  scale_fill_manual(values = c("Neutral" = "#1baf7a",
-                               "El Nino" = "#eb6834",
-                               "La Nina" = "#2a78d6")) +
+  scale_fill_manual(
+    values = c("La Niña" = "#2a78d6",
+               "Neutral" = "#1baf7a",
+               "El Niño" = "#eb6834"),
+    breaks = c("La Niña", "Neutral", "El Niño")
+  ) +
   labs(x = "Water year", y = "Precipitation (inches)", fill = "ENSO phase") +
   theme_minimal(base_size = 10) + theme(legend.position = "bottom")
 ```
@@ -225,9 +228,18 @@ ggplot(df, aes(x = oni_djf, y = precip_in)) +
               colour = "#2a78d6", linewidth = 0.7) +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE,
               colour = "#eb6834", linetype = "dashed", linewidth = 0.7) +
-  scale_colour_manual(values = c("Neutral" = "#1baf7a",
-                                 "El Nino" = "#eb6834",
-                                 "La Nina" = "#2a78d6")) +
+  scale_colour_manual(
+    values = c("La Niña" = "#2a78d6",
+               "Neutral" = "#1baf7a",
+               "El Niño" = "#eb6834"),
+    breaks = c("La Niña", "Neutral", "El Niño")
+  ) +
+  scale_shape_manual(
+    values = c("La Niña" = 17,
+               "Neutral" = 16,
+               "El Niño" = 15),
+    breaks = c("La Niña", "Neutral", "El Niño")
+  ) +
   labs(x = "Winter ONI (degrees C, Dec-Feb)", y = "Precipitation (inches)",
        colour = "ENSO phase", shape = "ENSO phase") +
   theme_minimal(base_size = 10) + theme(legend.position = "bottom")

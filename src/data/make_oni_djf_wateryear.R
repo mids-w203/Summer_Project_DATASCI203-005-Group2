@@ -51,8 +51,12 @@ stopifnot(all(c("Year", "ONI") %in% names(oni_raw)))
 
 # DJF of calendar year Y = Dec(Y-1)-Feb(Y), inside water year Y,
 # so the DJF row's Year IS the water year.
-d <- oni_raw[oni_raw[[win_col]] == "DJF" &
-             oni_raw$Year >= WY_FIRST & oni_raw$Year <= WY_LAST, ]
+# Guard against a stray all-NA record that some downloads include.
+d <- oni_raw[!is.na(oni_raw[[win_col]]) &
+             !is.na(oni_raw$Year) &
+             oni_raw[[win_col]] == "DJF" &
+             oni_raw$Year >= WY_FIRST &
+             oni_raw$Year <= WY_LAST, ]
 d <- d[order(d$Year), ]
 n <- nrow(d)
 if (n != WY_LAST - WY_FIRST + 1)
@@ -84,6 +88,5 @@ out <- data.frame(
 
 # ---- 4. Write the interim file ---------------------------------------
 dir.create(dirname(OUT), showWarnings = FALSE, recursive = TRUE)
-write.table(out, OUT, sep = ",", quote = FALSE, row.names = FALSE,
-            na = "", eol = "\r\n")
+write.csv(out, OUT, row.names = FALSE, na = "", quote = FALSE)
 message("Wrote ", OUT, ": ", n, " water years.")
