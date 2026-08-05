@@ -31,6 +31,7 @@ options(scipen = 999)
 
 # PATHS (via here() so they resolve from the project root on any machine)
 ONI_PATH      <- here("data", "interim", "oni_djf_wateryear.csv")
+SOI_PATH      <- here("data", "interim", "soi_ndjfm_wateryear.csv")
 # NOAA statewide water-year total. NOTE: the raw NOAA "Climate at a Glance"
 # file this chunk was written for (skip=2, Date=YYYYMM) is not in the repo yet;
 # data/external/california_annual_precipitation_1950_2025.csv has columns
@@ -61,6 +62,11 @@ oni <- read_csv(ONI_PATH, col_types = cols(
                         levels = c("neutral", "el_nino", "la_nina"),
                         labels = c("Neutral", "El Nino", "La Nina"))
   )
+
+soi <- read_csv(SOI_PATH, col_types = cols(
+  water_year = col_integer(),
+  rsoi       = col_double()
+))
 ```
 
 The ONI file is pre-built: the December-February mean, NOAA's phase and strength classifications, 0/1 phase indicators, a one-year lag, and a lineartime trend. No derivation is needed here, which removes a whole class of possible error - but it also means the water-year alignment is inherited rather than verified, so the checks below matter.
@@ -143,14 +149,17 @@ if (use_proxy) {
 
 ```{r merge}
 df <- oni %>%
+  inner_join(soi, by = "water_year") %>%
   inner_join(precip, by = "water_year") %>%
-  filter(!is.na(precip_in), !is.na(oni_djf_lag1)) %>%   # common sample, all models
+  arrange(water_year) %>%
+  mutate(rsoi_lag1 = lag(rsoi)) %>%
+  filter(!is.na(precip_in), !is.na(oni_djf_lag1), !is.na(rsoi_lag1)) %>%  # common sample, all models
   arrange(water_year)
 
 stopifnot(nrow(df) == n_distinct(df$water_year), all(df$precip_in > 0))
 ```
 
-All five models are estimated on these `r nrow(df)` water years. Restricting to
+All six models are estimated on these `r nrow(df)` water years. Restricting to
 rows with a defined lag costs the first sample year but makes AIC and the nested
 F-test legitimate comparisons rather than apples-to-oranges.
 
@@ -160,13 +169,14 @@ F-test legitimate comparisons rather than apples-to-oranges.
 ```{r descriptives}
 tibble(
   Variable = c("Precipitation (in)", "ONI (Dec-Feb, C)",
-               "Previous winter ONI (C)"),
-  N        = c(nrow(df), nrow(df), nrow(df)),
-  Mean     = c(mean(df$precip_in), mean(df$oni_djf), mean(df$oni_djf_lag1)),
-  SD       = c(sd(df$precip_in), sd(df$oni_djf), sd(df$oni_djf_lag1)),
-  Min      = c(min(df$precip_in), min(df$oni_djf), min(df$oni_djf_lag1)),
-  Median   = c(median(df$precip_in), median(df$oni_djf), median(df$oni_djf_lag1)),
-  Max      = c(max(df$precip_in), max(df$oni_djf), max(df$oni_djf_lag1))
+               "Previous winter ONI (C)", "Reversed SOI (Nov-Mar)",
+               "Previous winter reversed SOI"),
+  N        = c(nrow(df), nrow(df), nrow(df), nrow(df), nrow(df)),
+  Mean     = c(mean(df$precip_in), mean(df$oni_djf), mean(df$oni_djf_lag1), mean(df$rsoi), mean(df$rsoi_lag1)),
+  SD       = c(sd(df$precip_in), sd(df$oni_djf), sd(df$oni_djf_lag1), sd(df$rsoi), sd(df$rsoi_lag1)),
+  Min      = c(min(df$precip_in), min(df$oni_djf), min(df$oni_djf_lag1), min(df$rsoi), min(df$rsoi_lag1)),
+  Median   = c(median(df$precip_in), median(df$oni_djf), median(df$oni_djf_lag1), median(df$rsoi), median(df$rsoi_lag1)),
+  Max      = c(max(df$precip_in), max(df$oni_djf), max(df$oni_djf_lag1), max(df$rsoi), max(df$rsoi_lag1))
 ) %>%
   kable(booktabs = TRUE, digits = 2,
         caption = "Descriptive statistics for the analysis variables.") %>%
@@ -254,8 +264,9 @@ m2 <- lm(precip_in      ~ el_nino + la_nina,                      data = df)
 m3 <- lm(precip_in      ~ oni_djf + oni_djf_lag1 + time_trend,    data = df)
 m4 <- lm(log(precip_in) ~ oni_djf,                                data = df)
 m5 <- lm(precip_in      ~ oni_djf + I(oni_djf^2),                 data = df)
+m6 <- lm(precip_in      ~ oni_djf + rsoi + el_nino,               data = df)
 
-models <- list(m1, m2, m3, m4, m5)
+models <- list(m1, m2, m3, m4, m5, m6)
 rob_se <- lapply(models, function(m) sqrt(diag(vcovHC(m, type = "HC1"))))
 ```
 
@@ -266,18 +277,20 @@ rob_se <- lapply(models, function(m) sqrt(diag(vcovHC(m, type = "HC1"))))
 | M3 | Is the association confounded by last winter's ENSO or by trend? |
 | M4 | Is the relationship proportional rather than additive? |
 | M5 | Does the relationship steepen at extreme ONI values? |
+| M6 | Does nesting the continuous rSOI add anything beyond the baseline? |
 
 ```{r model-table, results='asis'}
 stargazer(
-  m1, m2, m3, m4, m5,
+  m1, m2, m3, m4, m5, m6,
   se               = rob_se,
   type             = "latex",
   header           = FALSE,
   title            = "ENSO intensity and California water-year precipitation.",
-  column.labels    = c("M1", "M2", "M3", "M4", "M5"),
+  column.labels    = c("M1", "M2", "M3", "M4", "M5", "M6"),
   model.numbers    = FALSE,
-  covariate.labels = c("Winter ONI", "Winter ONI squared", "El Nino", "La Nina",
-                       "Previous winter ONI", "Time trend"),
+  covariate.labels = c("Winter ONI", "El Nino", "La Nina",
+                       "Winter ONI squared", "Previous winter ONI", "Time trend",
+                       "Reversed SOI"),
   omit.stat        = c("f", "ser"),
   notes            = "HC1 heteroskedasticity-robust standard errors.",
   notes.align      = "l",
@@ -312,7 +325,7 @@ tibble(
 ```{r comparison}
 tibble(
   Model = c("M1 linear", "M2 phase dummies", "M3 lag + trend",
-            "M4 log outcome", "M5 quadratic"),
+            "M4 log outcome", "M5 quadratic", "M6 ONI + SOI + El Nino"),
   `R-squared`   = map_dbl(models, ~ summary(.x)$r.squared),
   `Adj R-squared` = map_dbl(models, ~ summary(.x)$adj.r.squared),
   AIC           = map_dbl(models, AIC)
@@ -353,7 +366,9 @@ tibble(
 ) %>%
   kable(booktabs = TRUE, caption = "Classical linear model assumption checks.") %>%
   kable_styling(latex_options = "hold_position")
+```
 
+```{r vif-table}
 vif(m3) %>% enframe(name = "Term", value = "VIF") %>%
   kable(booktabs = TRUE, digits = 2,
         caption = "Variance inflation factors, M3.") %>%
