@@ -60,7 +60,7 @@ mean_precip     <- mean(d$precip_in)
 sd_precip       <- sd(d$precip_in)
 skew_precip     <- skewness(d$precip_in)
 skew_log_precip <- skewness(log(d$precip_in))
-cor_oni_rsoi    <- cor(d$oni_djf, d$rsoi)
+cor_oni_rsoi    <- cor(d$oni_djf, d$rsoi, use = "complete.obs")
 oni_lag_r       <- cor(d$oni_djf, d$oni_djf_lag1, use = "complete.obs")
 n_vstrong       <- sum(d$enso_strength == "very_strong")
 mean_vstrong    <- mean(d$precip_in[d$enso_strength == "very_strong"])
@@ -72,11 +72,16 @@ model_linear   <- lm(precip_in ~ oni_djf, data = d)
 model_phase    <- lm(precip_in ~ el_nino + la_nina, data = d)
 model_lagtrend <- lm(precip_in ~ oni_djf + oni_djf_lag1 + time_trend, data = d)
 model_log      <- lm(log(precip_in) ~ oni_djf, data = d)
+model_quad     <- lm(precip_in ~ oni_djf + I(oni_djf^2), data = d)
+model_soi      <- lm(precip_in ~ oni_djf + rsoi + el_nino, data = d)
 
 ct_linear   <- coeftest(model_linear,   vcov = get_robust_vcov)
 ct_phase    <- coeftest(model_phase,    vcov = get_robust_vcov)
 ct_lagtrend <- coeftest(model_lagtrend, vcov = get_robust_vcov)
 ct_log      <- coeftest(model_log,      vcov = get_robust_vcov)
+
+models <- list(model_linear, model_phase, model_lagtrend, model_log, model_quad, model_soi)
+robust_se <- lapply(models, get_robust_se)
 
 slope_linear  <- unname(coef(model_linear)["oni_djf"])
 slope_rob_se  <- unname(get_robust_se(model_linear)["oni_djf"])
@@ -89,7 +94,7 @@ r2_linear     <- summary(model_linear)$r.squared
 r2_lagtrend   <- summary(model_lagtrend)$r.squared
 r2_log        <- summary(model_log)$r.squared
 cor_oni       <- cor(d$precip_in, d$oni_djf)
-cor_rsoi      <- cor(d$precip_in, d$rsoi)
+cor_rsoi      <- cor(d$precip_in, d$rsoi, use = "complete.obs")
 cor_oni_fmt   <- sprintf("%.3f", cor_oni)
 cor_rsoi_fmt  <- sprintf("%.3f", cor_rsoi)
 elnino_coef   <- unname(coef(model_phase)["el_nino"])
@@ -117,7 +122,7 @@ Describing this relationship is valuable on its own terms. It tells the public a
 
 ### Provenance
 
-- **California statewide precipitation** (`precip_in`): Total California water-year (October–September) precipitation, in inches. Our intended source was NOAA's Climate at a Glance statewide series, but that service was returning HTTP 503 throughout the analysis period. We therefore construct the outcome directly from NOAA GHCN-Daily station records: for each water year we total each station's monthly precipitation, keep only stations reporting all twelve months, and average across the `r round(mean(d$n_stations))` stations (median) available that year. This is a station average rather than an area-weighted statewide value, so its level runs roughly one inch higher than the published statewide figure; the ENSO relationship this report describes is materially unchanged (correlation with winter ONI of `r cor_oni_fmt` against 0.257 for the published series). The pipeline prefers the official file automatically if it is placed in `data/external/`.
+- **California statewide precipitation** (`precip_in`): Total California water-year (October–September) precipitation, in inches. Our intended source was NOAA's Climate at a Glance statewide series, but that service was returning HTTP 503 throughout the analysis period. We therefore construct the outcome directly from NOAA GHCN-Daily station records: for each water year we total each station's monthly precipitation, keep only stations reporting all twelve months, and average across the stations available that year (`r round(mean(d$n_stations))` on average). This is a station average rather than an area-weighted statewide value, so its level runs roughly one inch higher than the published statewide figure; the ENSO relationship this report describes is materially unchanged (correlation with winter ONI of `r cor_oni_fmt` against 0.257 for the published series). The pipeline prefers the official file automatically if it is placed in `data/external/`.
 - **Oceanic Niño Index** (`oni_djf`): NOAA's December–February Oceanic Niño Index (ONI), averaged within each water year. Phase indicators, strength categories, a one-year lag, and a time trend were derived from this series.
 - **Southern Oscillation Index** (`rsoi`): November–March SOI multiplied by -1 so that positive values correspond to El Niño conditions.
 
@@ -254,7 +259,7 @@ ggplot(d) +
 
 ## Regression Models
 
-We estimate four models. Each one asks a different question of the same
+We estimate six models. Each one asks a different question of the same
 76 water years, and reading them together is what separates a robust
 description from an artifact of one specification.
 
@@ -264,20 +269,23 @@ description from an artifact of one specification.
 | 2 | `precip_in ~ el_nino + la_nina` | What does collapsing intensity into categories cost? |
 | 3 | `precip_in ~ oni_djf + oni_djf_lag1 + time_trend` | Is the association confounded by last winter's ENSO or by trend? |
 | 4 | `log(precip_in) ~ oni_djf` | Is the relationship proportional rather than additive? |
+| 5 | `precip_in ~ oni_djf + I(oni_djf^2)` | Does the relationship steepen at extreme ONI values? |
+| 6 | `precip_in ~ oni_djf + rsoi + el_nino` | Does a nested SOI specification add explanatory value? |
 
 ```{r model-table, results='asis'}
 stargazer(
-  model_linear, model_phase, model_lagtrend, model_log,
-  se               = lapply(list(model_linear, model_phase,
-                                 model_lagtrend, model_log), get_robust_se),
+  models,
+  se               = robust_se,
   type             = "latex",
   header           = FALSE,
-  title            = "ENSO intensity and California water-year precipitation. Models 1-3 are in inches; Model 4's outcome is log inches, so its coefficient is a proportional effect and its R-squared is not comparable to the others.",
-  dep.var.labels   = c("Precipitation (in)", "log(Precipitation)"),
-  column.labels    = c("M1", "M2", "M3", "M4"),
+  title            = "ENSO intensity and California water-year precipitation. Models 1-3, 5-6 are in inches; Model 4's outcome is log inches, so its coefficient is proportional and its R-squared is not directly comparable.",
+  dep.var.labels   = c("Precipitation (in)", "log(Precipitation)",
+                       "Precipitation (in)"),
+  column.labels    = c("M1", "M2", "M3", "M4", "M5", "M6"),
   model.numbers    = FALSE,
-  covariate.labels = c("Winter ONI", "El Nino", "La Nina",
-                       "Previous winter ONI", "Time trend"),
+  covariate.labels = c("Winter ONI", "Reversed SOI", "El Nino", "La Nina",
+                       "Previous winter ONI", "Time trend",
+                       "Winter ONI squared"),
   omit.stat        = c("f", "ser"),
   notes            = "HC1 heteroskedasticity-robust standard errors.",
   notes.align      = "l",
@@ -307,6 +315,8 @@ proportionally: each degree of ONI corresponds to roughly
 `r sprintf("%.1f", pct_per_oni)`% more precipitation
 ($p = `r sprintf("%.3f", p_log_rob)`$).
 
+\newpage
+
 ## Regression Assumptions
 
 ```{r assumption-tests, include=FALSE}
@@ -322,14 +332,13 @@ vif_m3 <- car::vif(model_lagtrend)
 
 **1. IID sampling.** Water years are not drawn independently: ENSO is a
 physical system with memory, so a wet regime can persist. This is the
-assumption most at risk, and we test it directly rather than assert it. The
-lagged ONI is strongly autocorrelated
-($r = `r sprintf("%.2f", oni_lag_r)`$), but what matters for inference is
+assumption most at risk, and we test it directly rather than assert it.
+Winter ONI shows essentially no year-over-year autocorrelation
+($r = `r sprintf("%.2f", oni_lag_r)`$), and what matters for inference is
 the *residuals*. A Breusch--Godfrey test finds no serial correlation
 ($p = `r sprintf("%.3f", bg2$p.value)`$) and the lag-1 residual correlation
-is `r sprintf("%.3f", lag1_r)`. The ENSO signal, not the errors, carries
-the persistence -- so OLS standard errors are not being inflated by
-autocorrelation. The sample is nonetheless a single realization of one
+is `r sprintf("%.3f", lag1_r)`, so OLS standard errors are not being
+inflated by autocorrelation. The sample is nonetheless a single realization of one
 climate system, which is why we describe rather than infer causally.
 
 **2. No perfect collinearity.** R would drop a perfectly collinear term,
@@ -481,7 +490,7 @@ The whole pipeline is reproducible from a single command, `Rscript src/data/make
 \begin{landscape}
 ```
 
-### A.5 Data Dictionary
+### A.3 Data Dictionary
 
 ```{r data-dictionary-table}
 # The team's variable-level documentation (Data/data_dictionary.csv), rendered
