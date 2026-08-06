@@ -1,0 +1,404 @@
+---
+title: "ENSO Intensity and California Wet-Season Precipitation: Water-Year Analysis"
+subtitle: "DATASCI 203 — Group 2"
+author: "Daniel Bowd, Gunhui Kim, Rishi Raj, Sasha Schaps"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    number_sections: true
+    fig_caption: true
+fontsize: 11pt
+geometry: margin=1in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, warning = FALSE, message = FALSE,
+  fig.align = "center", fig.width = 7, fig.height = 3.4
+)
+
+library(here)
+library(tidyverse)
+library(sandwich)
+library(lmtest)
+library(stargazer)
+library(car)
+library(knitr)
+library(kableExtra)
+library(moments)
+
+options(scipen = 999)
+
+# PATHS (via here() so they resolve from the project root on any machine)
+ONI_PATH      <- here("data", "interim", "oni_djf_wateryear.csv")
+SOI_PATH      <- here("data", "interim", "soi_ndjfm_wateryear.csv")
+# CANONICAL OUTCOME: station-weighted regional wet-season (Nov-Apr) composite.
+# NOAA's Climate-at-a-Glance statewide series was unavailable (HTTP 503)
+# throughout the analysis period and is not in the repo, so the composite is
+# the outcome of record for this analysis; every number in this document,
+# including the reproducibility table, is defined against it. It is a
+# wet-season construct, so its level runs below statewide annual figures.
+REGIONAL_PATH <- here("data", "interim", "ca_rainfall_enso_model_data.csv")
+```
+
+
+# Data
+
+## The ENSO series
+
+```{r oni}
+oni <- read_csv(ONI_PATH, col_types = cols(
+  water_year   = col_integer(),
+  oni_djf      = col_double(),
+  enso_phase   = col_character(),
+  enso_strength= col_character(),
+  el_nino      = col_integer(),
+  la_nina      = col_integer(),
+  oni_djf_lag1 = col_double(),
+  time_trend   = col_integer()
+)) %>%
+  mutate(
+    enso_phase = factor(enso_phase,
+                        levels = c("neutral", "el_nino", "la_nina"),
+                        labels = c("Neutral", "El Nino", "La Nina"))
+  )
+
+soi <- read_csv(SOI_PATH, col_types = cols(
+  water_year = col_integer(),
+  rsoi       = col_double()
+))
+```
+
+The ONI file is pre-built: the December-February mean, NOAA's phase and strength classifications, 0/1 phase indicators, a one-year lag, and a linear time trend. No derivation is needed here, which removes a whole class of possible error - but it also means the water-year alignment is inherited rather than verified, so the checks below matter.
+
+```{r oni-validate}
+tibble(
+  Check = c("Water years", "Range", "Mean ONI", "SD ONI",
+            "Phase counts (La Nina / Neutral / El Nino)",
+            "Lag available for"),
+  Value = c(
+    as.character(nrow(oni)),
+    paste0("WY", min(oni$water_year), "-WY", max(oni$water_year)),
+    sprintf("%.2f", mean(oni$oni_djf)),
+    sprintf("%.2f", sd(oni$oni_djf)),
+    paste(sum(oni$la_nina), sum(oni$enso_phase == "Neutral"),
+          sum(oni$el_nino), sep = " / "),
+    paste0(sum(!is.na(oni$oni_djf_lag1)), " years")
+  )
+) %>%
+  kable(booktabs = TRUE, caption = "ENSO series validation.") %>%
+  kable_styling(latex_options = "hold_position")
+
+stopifnot(
+  nrow(oni) == n_distinct(oni$water_year), #one row per water year
+  !any(is.na(oni$oni_djf)),
+  all(oni$el_nino + oni$la_nina <= 1) #phases mutually exclusive
+)
+```
+
+## The precipitation series
+
+The outcome is a station-weighted composite of regional wet-season (November-April)
+precipitation, built from GHCN-Daily station records aggregated to regions and
+weighted by station count. **This is a wet-season construct, not an annual
+statewide total** — its level runs below published statewide water-year figures
+(its correlation with the winter ONI, 0.253, is nearly identical to the 0.257 of
+NOAA's published statewide series, so the ENSO relationship is preserved), and
+levels and intercepts quoted anywhere in this document are on the composite scale.
+
+```{r precip}
+precip <- read_csv(REGIONAL_PATH, col_types = cols()) %>%
+  mutate(cal_year = as.integer(format(ym, "%Y")),
+         wy = if_else(month >= 10, cal_year + 1L, cal_year)) %>%
+  group_by(region, wy) %>%
+  summarise(mm = sum(prcp), stn = mean(n_stations), n_m = n(), .groups = "drop") %>%
+  filter(n_m == 6) %>%
+  group_by(water_year = wy) %>%
+  summarise(precip_in = weighted.mean(mm / 25.4, stn),
+            .groups = "drop")
+```
+
+## Merge
+
+```{r merge}
+# Build the SOI lag by year, not by row position: dplyr::lag() would silently
+# pull the wrong year's value if a join ever dropped a year in the middle.
+soi <- soi %>%
+  arrange(water_year) %>%
+  mutate(rsoi_lag1 = if_else(lag(water_year) == water_year - 1L,
+                             lag(rsoi), NA_real_))
+
+df <- oni %>%
+  inner_join(soi, by = "water_year") %>%
+  inner_join(precip, by = "water_year") %>%
+  arrange(water_year) %>%
+  filter(!is.na(precip_in), !is.na(oni_djf_lag1), !is.na(rsoi_lag1))  # common sample, all models
+
+stopifnot(
+  nrow(df) == n_distinct(df$water_year),
+  all(df$precip_in > 0),
+  all(diff(df$water_year) == 1)  # contiguous sample; lags reference the true previous year
+)
+```
+
+All six models are estimated on these `r nrow(df)` water years. Requiring both
+lags costs the first three sample years (WY1950 has no ONI lag; the SOI series
+starts in WY1952, so its lag is first defined in WY1953), but a common sample
+makes AIC and the nested F-test legitimate comparisons rather than
+apples-to-oranges.
+
+
+# Descriptive analysis
+
+```{r descriptives}
+tibble(
+  Variable = c("Precipitation (in)", "ONI (Dec-Feb, C)",
+               "Previous winter ONI (C)", "Reversed SOI (Nov-Mar)",
+               "Previous winter reversed SOI"),
+  N        = c(nrow(df), nrow(df), nrow(df), nrow(df), nrow(df)),
+  Mean     = c(mean(df$precip_in), mean(df$oni_djf), mean(df$oni_djf_lag1), mean(df$rsoi), mean(df$rsoi_lag1)),
+  SD       = c(sd(df$precip_in), sd(df$oni_djf), sd(df$oni_djf_lag1), sd(df$rsoi), sd(df$rsoi_lag1)),
+  Min      = c(min(df$precip_in), min(df$oni_djf), min(df$oni_djf_lag1), min(df$rsoi), min(df$rsoi_lag1)),
+  Median   = c(median(df$precip_in), median(df$oni_djf), median(df$oni_djf_lag1), median(df$rsoi), median(df$rsoi_lag1)),
+  Max      = c(max(df$precip_in), max(df$oni_djf), max(df$oni_djf_lag1), max(df$rsoi), max(df$rsoi_lag1))
+) %>%
+  kable(booktabs = TRUE, digits = 2,
+        caption = "Descriptive statistics for the analysis variables.") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r phase-summary}
+df %>%
+  group_by(`ENSO phase` = enso_phase) %>%
+  summarise(`Water years` = n(),
+            `Mean precip (in)` = mean(precip_in),
+            `SD (in)` = sd(precip_in),
+            `Driest` = min(precip_in),
+            `Wettest` = max(precip_in),
+            .groups = "drop") %>%
+  kable(booktabs = TRUE, digits = 1,
+        caption = "Precipitation by ENSO phase.") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r welch}
+# Explicit argument order so the statistic is (El Nino mean - all-others mean).
+# The formula interface t.test(precip_in ~ el_nino) puts group 0 first and
+# would flip the sign relative to the reproducibility table below.
+wt <- t.test(df$precip_in[df$el_nino == 1], df$precip_in[df$el_nino == 0])
+cat(sprintf("Welch two-sample t-test, El Nino years vs all others: t = %.2f, df = %.1f, p = %.3f\n",
+            wt$statistic, wt$parameter, wt$p.value))
+```
+
+## Figures
+
+```{r fig-series, fig.cap="Wet-season composite precipitation by water year, coloured by ENSO phase."}
+ggplot(df, aes(x = water_year, y = precip_in, fill = enso_phase)) +
+  geom_col() +
+  scale_fill_manual(values = c("Neutral" = "#1baf7a",
+                               "El Nino" = "#eb6834",
+                               "La Nina" = "#2a78d6")) +
+  labs(x = "Water year", y = "Precipitation (inches)", fill = "ENSO phase") +
+  theme_minimal(base_size = 10) + theme(legend.position = "bottom")
+```
+
+```{r fig-scatter, fig.cap="Precipitation against winter ONI, with linear and quadratic fits."}
+ggplot(df, aes(x = oni_djf, y = precip_in)) +
+  geom_point(aes(colour = enso_phase, shape = enso_phase), size = 2, alpha = 0.85) +
+  geom_smooth(method = "lm", formula = y ~ x, se = TRUE,
+              colour = "#2a78d6", linewidth = 0.7) +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE,
+              colour = "#eb6834", linetype = "dashed", linewidth = 0.7) +
+  scale_colour_manual(values = c("Neutral" = "#1baf7a",
+                                 "El Nino" = "#eb6834",
+                                 "La Nina" = "#2a78d6")) +
+  labs(x = "Winter ONI (degrees C, Dec-Feb)", y = "Precipitation (inches)",
+       colour = "ENSO phase", shape = "ENSO phase") +
+  theme_minimal(base_size = 10) + theme(legend.position = "bottom")
+```
+
+```{r fig-hist, fig.cap="Precipitation is right-skewed; the log transform largely corrects it."}
+bind_rows(
+  df %>% transmute(value = precip_in,      scale = "Levels (inches)"),
+  df %>% transmute(value = log(precip_in), scale = "Log inches")
+) %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 18, fill = "#2a78d6", alpha = 0.85) +
+  facet_wrap(~ scale, scales = "free_x") +
+  labs(x = NULL, y = "Water years") +
+  theme_minimal(base_size = 10)
+```
+
+
+# Models
+
+```{r models}
+m1 <- lm(precip_in      ~ oni_djf,                                data = df)
+m2 <- lm(precip_in      ~ el_nino + la_nina,                      data = df)
+m3 <- lm(precip_in      ~ oni_djf + oni_djf_lag1 + time_trend,    data = df)
+m4 <- lm(log(precip_in) ~ oni_djf,                                data = df)
+m5 <- lm(precip_in      ~ oni_djf + I(oni_djf^2),                 data = df)
+m6 <- lm(precip_in      ~ oni_djf + rsoi + el_nino,               data = df)
+
+models <- list(m1, m2, m3, m4, m5, m6)
+rob_se <- lapply(models, function(m) sqrt(diag(vcovHC(m, type = "HC1"))))
+```
+
+| Model | Question |
+|-------|----------|
+| M1 | Is there a linear ENSO-precipitation association? |
+| M2 | What does collapsing intensity into phase categories cost? |
+| M3 | Is the association confounded by last winter's ENSO or by trend? |
+| M4 | Is the relationship proportional rather than additive? |
+| M5 | Does the relationship steepen at extreme ONI values? |
+| M6 | Does nesting the continuous rSOI add anything beyond the baseline? |
+
+```{r model-table, results='asis'}
+stargazer(
+  m1, m2, m3, m4, m5, m6,
+  se               = rob_se,
+  type             = "latex",
+  header           = FALSE,
+  title            = "ENSO intensity and California water-year precipitation.",
+  column.labels    = c("M1", "M2", "M3", "M4", "M5", "M6"),
+  model.numbers    = FALSE,
+  # Labels must follow order of FIRST APPEARANCE across m1..m6:
+  # oni_djf, el_nino, la_nina, oni_djf_lag1, time_trend, I(oni_djf^2), rsoi
+  covariate.labels = c("Winter ONI", "El Nino", "La Nina",
+                       "Previous winter ONI", "Time trend", "Winter ONI squared",
+                       "Reversed SOI"),
+  omit.stat        = c("f", "ser"),
+  notes            = "HC1 heteroskedasticity-robust standard errors.",
+  notes.align      = "l",
+  font.size        = "small"
+)
+```
+
+## Practical significance
+
+```{r practical}
+b1 <- coef(m1)["oni_djf"]
+tibble(
+  Scenario = c("One SD increase in winter ONI",
+               "Strong El Nino (ONI = +1.5)",
+               "Very strong El Nino (ONI = +2.3)",
+               "Strong La Nina (ONI = -1.5)"),
+  `Change vs mean (in)` = c(b1 * sd(df$oni_djf), b1 * 1.5, b1 * 2.3, b1 * -1.5),
+  `As pct of mean` = 100 * c(b1 * sd(df$oni_djf), b1 * 1.5,
+                             b1 * 2.3, b1 * -1.5) / mean(df$precip_in),
+  `As pct of SD`   = 100 * c(b1 * sd(df$oni_djf), b1 * 1.5,
+                             b1 * 2.3, b1 * -1.5) / sd(df$precip_in)
+) %>%
+  kable(booktabs = TRUE, digits = 2,
+        caption = "Effect sizes implied by Model 1. The final column is the one
+                   that matters for planning: it compares the ENSO signal to the
+                   year-to-year noise it must be detected against.") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+## Model comparison
+
+```{r comparison}
+tibble(
+  Model = c("M1 linear", "M2 phase dummies", "M3 lag + trend",
+            "M4 log outcome", "M5 quadratic", "M6 ONI + SOI + El Nino"),
+  `R-squared`   = map_dbl(models, ~ summary(.x)$r.squared),
+  `Adj R-squared` = map_dbl(models, ~ summary(.x)$adj.r.squared),
+  AIC           = map_dbl(models, AIC)
+) %>%
+  kable(booktabs = TRUE, digits = 4,
+        caption = "M4's outcome is on a different scale, so its R-squared and AIC
+                   are NOT comparable to the others. Compare it only to itself.") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+
+# Regression assumptions
+
+```{r assumptions}
+bg <- bgtest(m1, order = 2)
+bp_lvl <- bptest(m1); bp_log <- bptest(m4)
+e <- residuals(m1)
+
+tibble(
+  Assumption = c("IID / no serial correlation", "IID / no serial correlation",
+                 "Homoskedasticity (levels)", "Homoskedasticity (log)",
+                 "Normal errors (levels)", "Normal errors (log)",
+                 "Skewness (levels)", "Skewness (log)"),
+  Test  = c("Breusch-Godfrey(2)", "Lag-1 residual autocorrelation",
+            "Breusch-Pagan", "Breusch-Pagan",
+            "Shapiro-Wilk", "Shapiro-Wilk", "-", "-"),
+  Value = c(sprintf("LM = %.2f, p = %.3f", bg$statistic, bg$p.value),
+            sprintf("%.3f", cor(head(e, -1), tail(e, -1))),
+            sprintf("p = %.3f", bp_lvl$p.value),
+            sprintf("p = %.3f", bp_log$p.value),
+            sprintf("p = %.3f", shapiro.test(residuals(m1))$p.value),
+            sprintf("p = %.3f", shapiro.test(residuals(m4))$p.value),
+            sprintf("%.2f", skewness(df$precip_in)),
+            sprintf("%.2f", skewness(log(df$precip_in))))
+) %>%
+  kable(booktabs = TRUE, caption = "Classical linear model assumption checks.") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r vif-table}
+vif(m3) %>% enframe(name = "Term", value = "VIF") %>%
+  kable(booktabs = TRUE, digits = 2,
+        caption = "Variance inflation factors, M3.") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r diag-plots, fig.height=5, fig.cap="Diagnostic plots for Models 1 and 4."}
+par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+plot(fitted(m1), residuals(m1), pch = 20, xlab = "Fitted", ylab = "Residuals",
+     main = "M1 residuals"); abline(h = 0, lty = 2)
+qqnorm(residuals(m1), pch = 20, main = "M1 Q-Q"); qqline(residuals(m1))
+plot(fitted(m4), residuals(m4), pch = 20, xlab = "Fitted", ylab = "Residuals",
+     main = "M4 residuals"); abline(h = 0, lty = 2)
+qqnorm(residuals(m4), pch = 20, main = "M4 Q-Q"); qqline(residuals(m4))
+par(mfrow = c(1, 1))
+```
+
+```{r acf, fig.height=2.8, fig.cap="Residual autocorrelation, Model 1."}
+acf(residuals(m1), main = "")
+```
+
+
+# Reproducibility check
+
+```{r repro}
+tribble(
+  ~Quantity,                       ~Expected,
+  "Descriptives n = 76 (WY1950-2025)", "mean 19.96, SD 6.99, min 6.87, median 18.38, max 38.00",
+  "Correlation with ONI",              "0.253",
+  "Skewness levels -> log",            "0.61 -> -0.15",
+  "Phase groups (La Nina/Neutral/El Nino)", "29 / 20 / 27",
+  "Welch t-test, El Nino vs rest",     "t = 1.69, p = 0.098",
+  "Model sample",                      "n = 73 (WY1953-2025)",
+  "M1 slope",                          "1.636 (HC1 SE 0.806, p = 0.046)",
+  "M1 intercept / R-squared",          "19.877 / 0.0576",
+  "M2 El Nino / La Nina",              "3.150 (p = 0.152) / 0.688 (p = 0.711)",
+  "M2 R-squared",                      "0.0369 (below M1)",
+  "M3 ONI / lag / trend",              "1.822 (p = 0.031) / 1.721 (p = 0.021) / 0.016 (p = 0.667)",
+  "M4 semi-elasticity",                "0.070 (p = 0.073)",
+  "M5 quadratic term",                 "1.052 (p = 0.108)",
+  "M6 ONI / rSOI / El Nino",           "0.645 (p = 0.713) / 0.819 (p = 0.534) / -0.149 (p = 0.960)",
+  "Nested F, M1 vs M3",                "2.54, p = 0.086",
+  "Nested F, M1 vs M5",                "2.79, p = 0.099",
+  "Breusch-Godfrey(2)",                "LM = 1.07, p = 0.587",
+  "Lag-1 residual autocorrelation",    "-0.052",
+  "Breusch-Pagan (levels / log)",      "p = 0.078 / p = 0.535",
+  "Shapiro-Wilk (levels / log)",       "p = 0.020 / p = 0.188"
+) %>%
+  kable(booktabs = TRUE,
+        caption = "Values computed independently in Python from the same source
+                   files, with the wet-season composite as the outcome. If the
+                   knit disagrees with any row here, something drifted.") %>%
+  kable_styling(latex_options = c("hold_position", "scale_down"))
+```
+
+\newpage
+# Appendix: Code {-}
+
+```{r appendix, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Raincheck — The Loose Promise of El Niño</title>
+<meta name="description" content="A scrollytelling read of 76 water years of California rainfall against ENSO: El Niño shifts the odds but doesn't decide the year. Four regression models, honest diagnostics, and what the loose promise means for water planning.">
+<meta name="theme-color" content="#EEF3F7">
+<link rel="canonical" href="https://sashaschaps.com/project-raincheck">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Sasha Schaps">
+<meta property="og:title" content="Project Raincheck — The Loose Promise of El Niño">
+<meta property="og:description" content="76 water years of California rainfall against ENSO: the signal shifts the odds, not the outcome.">
+<meta property="og:url" content="https://sashaschaps.com/project-raincheck">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F1EFE9'/%3E%3Cg fill='none' stroke-width='4' stroke-linecap='round'%3E%3Cpath d='M4 12 C 8 8, 12 16, 16 12 S 24 8, 28 12' stroke='%235C7268'/%3E%3Cpath d='M4 21 C 8 17, 12 25, 16 21 S 24 17, 28 21' stroke='%238FA9AC'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root{
+    --blue:#003262; --gold:#FDB515; --fog:#EEF3F7; --ink:#12233a;
+    --ln:#4472C4; --nt:#55A868; --en:#D2703A; --grey:#8a97a5;
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--serif); color:var(--ink); background:#fff; line-height:1.6}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative; min-height:92vh; display:flex; flex-direction:column; justify-content:center;
+        background:linear-gradient(180deg, #fff 0%, var(--fog) 100%); overflow:hidden; padding:0 1.5rem}
+  .hero-inner{max-width:880px; margin:0 auto; position:relative; z-index:2; text-align:center}
+  .eyebrow{font-family:var(--mono); font-size:.78rem; letter-spacing:.22em; text-transform:uppercase;
+           color:var(--blue); margin-bottom:1.4rem}
+  .eyebrow .dot{color:var(--gold)}
+  h1{font-size:clamp(2.4rem, 6vw, 4.6rem); line-height:1.05; color:var(--blue); font-weight:700; letter-spacing:-0.015em}
+  .hero p.dek{font-size:clamp(1.05rem, 2vw, 1.35rem); color:#3c4c60; max-width:640px; margin:1.6rem auto 0}
+  .byline{font-family:var(--sans); font-size:.85rem; color:var(--grey); margin-top:2.2rem}
+  .byline strong{color:var(--blue); font-weight:600}
+  #skyline{position:absolute; left:0; right:0; bottom:0; width:100%; height:30vh; z-index:1; display:block}
+  .scroll-hint{position:absolute; bottom:1.2rem; left:50%; transform:translateX(-50%); z-index:3;
+               font-family:var(--mono); font-size:.7rem; letter-spacing:.2em; color:var(--blue); opacity:.75}
+
+  /* ---------- prose ---------- */
+  .prose{max-width:640px; margin:0 auto; padding:5rem 1.5rem}
+  .prose p{font-size:1.14rem; margin-bottom:1.5rem}
+  .prose p:first-of-type::first-letter{font-size:3.2em; float:left; line-height:.82; padding-right:.12em; color:var(--blue); font-weight:700}
+  .prose a{color:var(--blue)}
+  mark{background:linear-gradient(transparent 55%, rgba(253,181,21,.55) 55%); padding:0 .1em}
+  .phase-chip{font-family:var(--sans); font-weight:600; white-space:nowrap}
+  .phase-chip::before{content:''; display:inline-block; width:.65em; height:.65em; border-radius:50%; margin-right:.32em}
+  .chip-ln::before{background:var(--ln)} .chip-nt::before{background:var(--nt)} .chip-en::before{background:var(--en)}
+
+
+  /* ---------- parks morph gallery ---------- */
+  .parks{background:#0b1b2b; padding:5rem 1.5rem}
+  .parks-inner{max-width:980px; margin:0 auto}
+  .parks-inner h2{color:#fff; font-size:clamp(1.5rem,3vw,2.1rem); margin-bottom:.6rem}
+  .parks-inner .sub{font-family:var(--sans); color:#9fb4c8; margin-bottom:2rem; max-width:620px}
+  .parks-stage{position:relative; border-radius:10px; overflow:hidden; background:#08131f;
+               box-shadow:0 22px 60px rgba(0,0,0,.45)}
+  #parkgl{display:block; width:100%; height:440px}
+  @media (max-width:700px){ #parkgl{height:300px} }
+  .pk-scrim{position:absolute; inset:0; pointer-events:none;
+            background:linear-gradient(to top, rgba(4,12,20,.88) 0%, rgba(4,12,20,.45) 30%, rgba(4,12,20,0) 62%)}
+  .pk-cap{position:absolute; left:1.6rem; right:1.6rem; bottom:1.3rem; color:#fff; pointer-events:none}
+  .pk-kicker{font-family:var(--mono); font-size:.66rem; letter-spacing:.24em; color:var(--gold)}
+  .pk-cap h3{font-family:var(--serif); font-size:clamp(1.3rem,3vw,2rem); margin:.25rem 0 .35rem; letter-spacing:-.01em}
+  .pk-cap p{font-family:var(--sans); font-size:.94rem; max-width:34rem; color:#dbe6ef; margin-bottom:.6rem}
+  .pk-gauge{font-family:var(--mono); font-size:.7rem; letter-spacing:.1em; color:#b9cde0}
+  .pk-gauge b{color:var(--gold); font-size:1.05rem; letter-spacing:0}
+  .pk-nav{position:absolute; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%;
+          border:1px solid rgba(255,255,255,.35); background:rgba(6,18,30,.45); color:#fff; cursor:pointer;
+          display:grid; place-items:center; font-size:1.2rem; line-height:1; backdrop-filter:blur(4px);
+          transition:background .2s, border-color .2s}
+  .pk-nav:hover{background:var(--gold); border-color:var(--gold); color:var(--blue)}
+  .pk-nav:focus-visible{outline:3px solid var(--gold); outline-offset:3px}
+  .pk-prev{left:1rem} .pk-next{right:1rem}
+  .pk-thumbs{display:flex; gap:.5rem; margin-top:.75rem; flex-wrap:wrap}
+  .pk-thumb{flex:1 1 0; min-width:92px; padding:0; border:2px solid transparent; border-radius:6px;
+            overflow:hidden; cursor:pointer; background:none; line-height:0; opacity:.55;
+            transition:opacity .2s, border-color .2s}
+  .pk-thumb canvas{width:100%; height:auto; display:block}
+  .pk-thumb:hover{opacity:.85}
+  .pk-thumb[aria-current="true"]{opacity:1; border-color:var(--gold)}
+  .pk-thumb:focus-visible{outline:3px solid var(--gold); outline-offset:2px}
+  .parks-note{font-family:var(--sans); font-size:.88rem; color:#8ea6bd; margin-top:1.4rem; max-width:620px}
+  .parks-note b{color:#fff}
+
+  /* ---------- scrolly ---------- */
+  .scrolly{position:relative; background:#fff}
+  .graphic{position:sticky; top:0; height:100vh; display:flex; align-items:center; justify-content:center; padding:0 .5rem}
+  .graphic svg{width:min(1000px, 96vw); height:auto; max-height:88vh}
+  .steps{position:relative; z-index:5; max-width:340px; margin:-100vh auto 0; pointer-events:none}
+  .step{min-height:95vh; display:flex; align-items:center}
+  .step-card{pointer-events:auto; background:rgba(255,255,255,.96); border:1px solid #dfe7ee; border-left:4px solid var(--gold);
+             box-shadow:0 8px 30px rgba(0,50,98,.10); padding:1.15rem 1.3rem; border-radius:6px;
+             font-family:var(--sans); font-size:.98rem; opacity:.35; transform:translateY(6px);
+             transition:opacity .3s ease, transform .3s ease}
+  .step.is-active .step-card{opacity:1; transform:none}
+  .step-card .kicker{font-family:var(--mono); font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; color:var(--blue); display:block; margin-bottom:.45rem}
+  .step-card strong{color:var(--blue)}
+  @media (min-width:1100px){ .steps{margin-left:6vw} }
+  @media (max-width:700px){
+    .steps{max-width:88vw}
+    .graphic svg{max-height:60vh; align-self:flex-start; margin-top:6vh}
+    .graphic{align-items:flex-start}
+    .step{align-items:flex-end; padding-bottom:8vh}
+  }
+
+  /* ---------- svg pieces ---------- */
+  .yr{transition:x .9s cubic-bezier(.4,0,.2,1), y .9s cubic-bezier(.4,0,.2,1),
+        width .9s cubic-bezier(.4,0,.2,1), height .9s cubic-bezier(.4,0,.2,1),
+        rx .9s cubic-bezier(.4,0,.2,1), opacity .5s ease, fill .5s ease}
+  @media (prefers-reduced-motion: reduce){
+    .yr{transition:none} .step-card{transition:none} html{scroll-behavior:auto}
+  }
+  .axis text{font-family:var(--mono); font-size:11px; fill:var(--grey)}
+  .axis line, .axis path{stroke:#cfd9e2}
+  .axis-title{font-family:var(--mono); font-size:11px; fill:var(--blue); letter-spacing:.08em}
+  .anno{font-family:var(--sans); font-size:12.5px; font-weight:600; fill:var(--blue)}
+  .anno-line{stroke:var(--blue); stroke-width:1; stroke-dasharray:2 3}
+  .fade{opacity:0; transition:opacity .6s ease}
+  .fade.show{opacity:1}
+
+  /* ---------- stat band, tables, footer ---------- */
+  .band{background:var(--blue); color:#fff; padding:4.5rem 1.5rem; position:relative; overflow:hidden}
+  .band-inner{max-width:880px; margin:0 auto; position:relative; z-index:2}
+
+  /* ---------- rain-ripple layer (CSS only) ---------- */
+  .band > input{position:absolute; opacity:0; pointer-events:none}
+  .ripple-scene{position:absolute; inset:0; z-index:1; pointer-events:none; --dur:4.5s}
+  .dropzone{position:absolute; width:0; height:0}
+  .dz1{left:18%; top:34%} .dz2{left:55%; top:72%} .dz3{left:84%; top:26%}
+  .rip{position:absolute; left:-30px; top:-15px; width:60px; height:30px; border-radius:50%;
+       border:1.5px solid rgba(253,181,21,.55); box-shadow:0 0 12px rgba(253,181,21,.15) inset;
+       transform:scale(0); opacity:0; animation:ripple var(--dur) linear infinite;
+       animation-delay:calc(var(--i) * var(--dur) / var(--n, 4))}
+  .dz2 .rip{border-color:rgba(255,255,255,.35)}
+  @keyframes ripple{
+    0%{transform:scale(.08); opacity:0}
+    8%{opacity:.85}
+    100%{transform:scale(7); opacity:0}
+  }
+  /* ripple count: show rings 1..n */
+  .rip[data-ring="4"], .rip[data-ring="5"]{display:none}
+  #r4:checked ~ .ripple-scene .rip[data-ring="4"]{display:block}
+  #r5:checked ~ .ripple-scene .rip[data-ring="4"],
+  #r5:checked ~ .ripple-scene .rip[data-ring="5"]{display:block}
+  #r3:checked ~ .ripple-scene{--n:3} #r4:checked ~ .ripple-scene{--n:4} #r5:checked ~ .ripple-scene{--n:5}
+  /* speed */
+  #s1:checked ~ .ripple-scene{--dur:7.5s} #s2:checked ~ .ripple-scene{--dur:5.5s}
+  #s3:checked ~ .ripple-scene{--dur:4s}  #s4:checked ~ .ripple-scene{--dur:2.6s}
+  /* blur */
+  #blur:checked ~ .ripple-scene .rip{filter:blur(1.4px)}
+  /* control strip */
+  .band.offstage .rip{animation-play-state:paused}
+  @media (prefers-reduced-motion: reduce){ .rip{animation:none; display:none} }
+  .band h2{font-size:clamp(1.6rem,3.4vw,2.3rem); margin-bottom:2.2rem}
+  .band h2 em{color:var(--gold); font-style:normal}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:1.6rem}
+  .stat .num{font-family:var(--serif); font-size:2.6rem; font-weight:700; color:var(--gold); line-height:1.1}
+  .stat .lab{font-family:var(--sans); font-size:.92rem; color:#c8d6e6; margin-top:.4rem}
+  .results-wrap{max-width:880px; margin:0 auto; padding:5rem 1.5rem}
+
+  /* ---------- ocean deep dive: ONI & rSOI ---------- */
+  .ocean-wrap{max-width:980px; margin:0 auto; padding:5rem 1.5rem 4rem}
+  .ocean-wrap h2{color:var(--blue); font-size:clamp(1.5rem,3vw,2.1rem); margin-bottom:.6rem}
+  .ocean-wrap .sub{font-family:var(--sans); color:#4a5a6d; margin-bottom:2rem; max-width:640px}
+  .ocean-panel{position:relative; border-radius:10px; overflow:hidden; box-shadow:0 18px 50px rgba(0,50,98,.22)}
+  #ocean{display:block; width:100%; height:400px}
+  @media (max-width:700px){ #ocean{height:300px} }
+  .ui{position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-between;
+      padding:1.3rem 1.5rem; pointer-events:none; color:#fff}
+  .ui-top{display:flex; justify-content:space-between; align-items:flex-start}
+  .ui .label{font-family:var(--mono); font-size:.7rem; letter-spacing:.3em; opacity:.85}
+  .ui .mood{text-align:right}
+  #mood-name{display:block; font-family:var(--serif); font-weight:700; font-size:clamp(1.2rem,2.6vw,1.9rem); letter-spacing:.04em; text-shadow:0 2px 14px rgba(0,0,0,.35)}
+  .mood-time{font-family:var(--mono); font-size:.85rem; opacity:.9}
+  .ui-bottom{pointer-events:auto}
+  .ui .caption{font-family:var(--serif); font-size:1.02rem; margin-bottom:.7rem; text-shadow:0 1px 10px rgba(0,0,0,.4)}
+  .slider-wrap{display:flex; align-items:center; gap:.8rem}
+  .slider-end{font-family:var(--mono); font-size:.64rem; letter-spacing:.22em; opacity:.9}
+  #oni-slider{flex:1; -webkit-appearance:none; appearance:none; height:3px; border-radius:2px;
+    background:linear-gradient(90deg, #6db6ff, #dfe9f2 45%, #dfe9f2 55%, var(--gold)); outline:none}
+  #oni-slider::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:#fff; border:3px solid var(--blue); cursor:ew-resize; box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  #oni-slider::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:#fff; border:3px solid var(--blue); cursor:ew-resize}
+  .ocean-readout{display:flex; flex-wrap:wrap; gap:1px; background:#dfe7ee; border:1px solid #dfe7ee; border-top:none;
+                 border-radius:0 0 10px 10px; overflow:hidden; font-family:var(--sans)}
+  .ocean-readout .cell{flex:1 1 200px; background:#fff; padding:.9rem 1.1rem}
+  .ocean-readout .k{font-family:var(--mono); font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--grey)}
+  .ocean-readout .v{font-family:var(--serif); font-size:1.35rem; font-weight:700; color:var(--blue); margin-top:.15rem}
+  .ocean-readout .v small{font-family:var(--sans); font-size:.72rem; font-weight:400; color:var(--grey)}
+  .idx-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.4rem; margin-top:2rem; font-family:var(--sans)}
+  .idx-card{background:var(--fog); border-radius:8px; padding:1.4rem 1.5rem; font-size:.95rem}
+  .idx-card h3{font-family:var(--serif); color:var(--blue); margin-bottom:.6rem}
+  .idx-card h3 span{font-family:var(--mono); font-size:.66rem; letter-spacing:.16em; color:var(--grey); display:block; margin-bottom:.3rem}
+  .idx-card p{margin-bottom:.6rem; color:#3c4c60}
+  .idx-card .agree{font-family:var(--mono); font-size:.72rem; letter-spacing:.1em; color:var(--blue);
+                   border-top:2px solid var(--gold); padding-top:.6rem; margin-top:.8rem}
+
+  /* ---------- station map ---------- */
+  .stations-wrap{background:var(--fog); padding:5rem 1.5rem}
+  .stations-inner{max-width:980px; margin:0 auto}
+  .stations-inner h2{color:var(--blue); font-size:clamp(1.5rem,3vw,2.1rem); margin-bottom:.6rem}
+  .stations-inner .sub{font-family:var(--sans); color:#4a5a6d; margin-bottom:2rem; max-width:640px}
+  .map-grid{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(240px,.85fr); gap:2.2rem; align-items:center}
+  @media (max-width:820px){ .map-grid{grid-template-columns:1fr} }
+  #stmap{width:100%; height:auto; display:block}
+  .st-dot{cursor:pointer; transition:r .15s ease}
+  .st-dot:hover{stroke:var(--blue); stroke-width:1.5}
+  .map-side{font-family:var(--sans); font-size:.98rem; color:#3c4c60}
+  .map-side p{margin-bottom:1rem}
+  .map-legend{margin:1.2rem 0; font-family:var(--mono); font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; color:var(--grey)}
+  .map-legend .bar{height:10px; border-radius:5px; margin:.4rem 0 .3rem;
+    background:linear-gradient(90deg, #FDB515, #cfd9d2, #6b9bc3, #003262)}
+  .map-legend .ends{display:flex; justify-content:space-between}
+  .map-stat{font-family:var(--serif); color:var(--blue); font-weight:700; font-size:1.5rem; line-height:1.25; margin-bottom:.3rem}
+  #st-tip{position:fixed; z-index:50; pointer-events:none; background:var(--blue); color:#fff;
+          font-family:var(--sans); font-size:.8rem; line-height:1.45; padding:.55rem .75rem; border-radius:5px;
+          box-shadow:0 6px 20px rgba(0,20,40,.35); opacity:0; transform:translate(-50%, calc(-100% - 12px)); transition:opacity .12s}
+  #st-tip .tn{font-weight:700; color:var(--gold)}
+  .st-anno{font-family:var(--sans); font-size:12px; font-weight:600; fill:var(--blue)}
+  .st-anno-line{stroke:var(--blue); stroke-width:1; stroke-dasharray:2 3; fill:none}
+  .socal-line{stroke:var(--en); stroke-width:1.4; stroke-dasharray:7 5}
+  .socal-lab{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; fill:var(--en)}
+
+
+  .results-wrap h2{color:var(--blue); font-size:clamp(1.5rem,3vw,2.1rem); margin-bottom:.6rem}
+  .results-wrap .sub{font-family:var(--sans); color:#4a5a6d; margin-bottom:2rem; max-width:640px}
+  table{width:100%; border-collapse:collapse; font-family:var(--sans); font-size:.92rem}
+  th{background:var(--blue); color:#fff; font-weight:600; padding:.65rem .6rem; text-align:center}
+  th:first-child{text-align:left}
+  td{padding:.6rem; border-bottom:1px solid #e4ebf1; text-align:center}
+  td:first-child{text-align:left; font-weight:600; color:var(--blue); background:var(--fog)}
+  td.hot{background:#FDF3DC; font-weight:600}
+  .foot{background:var(--fog); padding:4rem 1.5rem 5rem; font-family:var(--sans)}
+  .foot-inner{max-width:720px; margin:0 auto; font-size:.9rem; color:#4a5a6d}
+  .foot h3{font-family:var(--serif); color:var(--blue); margin-bottom:1rem}
+  .foot p{margin-bottom:.9rem}
+  .foot .brand{margin-top:2.4rem; padding-top:1.4rem; border-top:3px solid var(--gold);
+               display:flex; justify-content:space-between; flex-wrap:wrap; gap:.6rem;
+               font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--blue)}
+
+  /* ===== Project Raincheck: scrolly stargazer, assumptions, limitations ===== */
+  .rc-scrolly{position:relative; max-width:1180px; margin:0 auto; padding:0 1.5rem;
+    display:grid; grid-template-columns:minmax(280px,5fr) minmax(380px,7fr); gap:36px; background:#fff}
+  .rc-steps{grid-column:1}
+  .rc-sticky{grid-column:2; position:sticky; top:6vh; align-self:start; height:88vh;
+    display:flex; align-items:center}
+  .rc-step{min-height:78vh; display:flex; align-items:center; opacity:.28; transition:opacity .4s ease}
+  .rc-step.is-active{opacity:1}
+  .rc-card{background:#fff; border:1px solid #dfe7ee; border-left:4px solid var(--gold);
+    border-radius:8px; padding:22px 24px; box-shadow:0 8px 26px rgba(18,35,58,.08); font-family:var(--sans)}
+  .rc-card h3{font-family:var(--serif); color:var(--blue); font-size:1.25rem; margin-bottom:.4em}
+  .rc-card p{font-size:.98rem; margin-bottom:.8em; line-height:1.55}
+  .rc-card p:last-child{margin-bottom:0}
+  .rc-card .star{color:var(--en);font-weight:700}
+  .rc-card .stat{font-family:var(--serif); font-size:1.7rem; color:var(--blue); font-weight:700}
+  .rc-m1{border-left-color:var(--ln)} .rc-m2{border-left-color:var(--nt)}
+  .rc-m3{border-left-color:var(--en)} .rc-m4{border-left-color:var(--blue)}
+  .tblwrap{overflow-x:auto; width:100%}
+  .sgz{width:100%; min-width:640px; border-collapse:collapse; font-size:.8rem; background:#fff; font-family:var(--sans);
+    border:1px solid #dfe7ee; border-radius:10px; overflow:hidden; box-shadow:0 12px 34px rgba(18,35,58,.10)}
+  .sgz caption{caption-side:top; text-align:left; font-family:var(--serif); color:var(--blue);
+    font-size:1.05rem; font-weight:700; padding:0 2px 10px}
+  .sgz th,.sgz td{padding:9px 8px; text-align:center; border-bottom:1px solid var(--fog);
+    transition:opacity .45s ease, background .45s ease}
+  .sgz thead th{background:var(--blue); color:#fff; font-weight:700; font-size:.8rem}
+  .sgz thead th:first-child{background:#fff}
+  .sgz td:first-child{text-align:left; font-weight:600; color:var(--ink); font-size:.82rem}
+  .sgz .se{display:block; color:var(--grey); font-size:.74rem}
+  .sgz .star{color:var(--en); font-weight:700; letter-spacing:.06em}
+  .sgz tfoot td{font-size:.72rem; color:var(--grey); text-align:left; padding-top:10px; border-bottom:none}
+  .sgz .fitrow td{background:#f7fafc; font-weight:600}
+  .tblwrap[data-focus] .sgz td:not(:first-child), .tblwrap[data-focus] .sgz thead th:not(:first-child){opacity:.22}
+  .tblwrap[data-focus="m1"] .sgz td[data-m="1"], .tblwrap[data-focus="m2"] .sgz td[data-m="2"],
+  .tblwrap[data-focus="m3"] .sgz td[data-m="3"], .tblwrap[data-focus="m4"] .sgz td[data-m="4"],
+  .tblwrap[data-focus="m5"] .sgz td[data-m="5"], .tblwrap[data-focus="m6"] .sgz td[data-m="6"]{opacity:1; background:#FDF3DC}
+  .tblwrap[data-focus="m1"] .sgz thead th[data-m="1"], .tblwrap[data-focus="m2"] .sgz thead th[data-m="2"],
+  .tblwrap[data-focus="m3"] .sgz thead th[data-m="3"], .tblwrap[data-focus="m4"] .sgz thead th[data-m="4"],
+  .tblwrap[data-focus="m5"] .sgz thead th[data-m="5"], .tblwrap[data-focus="m6"] .sgz thead th[data-m="6"]{
+    background:var(--gold); color:var(--ink); opacity:1}
+  .tblwrap[data-focus="fit"] .sgz .fitrow td{opacity:1; background:#FDF3DC}
+  .tblwrap[data-focus="fit"] .sgz .fitrow td:first-child{opacity:1}
+  .rc-assump{max-width:880px; margin:2rem auto 0; display:flex; flex-direction:column; gap:12px; font-family:var(--sans)}
+  .rc-arow{display:grid; grid-template-columns:210px 140px 1fr; gap:16px; align-items:center;
+    background:#fff; border:1px solid #dfe7ee; border-radius:10px; padding:14px 18px}
+  .rc-arow h4{font-size:.95rem; color:var(--blue)}
+  .rc-pill{font-size:.72rem; font-weight:700; text-align:center; border-radius:999px; padding:5px 10px; color:#fff}
+  .rc-pill.ok{background:var(--nt)} .rc-pill.warn{background:var(--gold); color:var(--ink)} .rc-pill.bad{background:var(--en)}
+  .rc-arow p{font-size:.86rem; color:var(--ink); line-height:1.5}
+  .rc-limgrid{max-width:980px; margin:2rem auto 0; display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; font-family:var(--sans)}
+  .rc-lim{background:#fff; border:1px solid #dfe7ee; border-radius:12px; padding:22px 24px;
+    box-shadow:0 6px 20px rgba(18,35,58,.06)}
+  .rc-lim h3{font-family:var(--serif); font-size:1.15rem; margin-bottom:.7em}
+  .rc-lim ul{list-style:none; margin:0; padding:0}
+  .rc-lim li{font-size:.9rem; padding-left:1.1em; position:relative; margin-bottom:.7em; line-height:1.5}
+  .rc-lim li::before{content:'\2022'; position:absolute; left:0; font-weight:700}
+  .rc-l1 h3,.rc-l1 li::before{color:var(--ln)} .rc-l2 h3,.rc-l2 li::before{color:var(--nt)}
+  .rc-l3 h3,.rc-l3 li::before{color:var(--en)} .rc-l4 h3,.rc-l4 li::before{color:var(--blue)}
+  .rc-l5 h3,.rc-l5 li::before{color:var(--gold)} .rc-l6 h3,.rc-l6 li::before{color:var(--grey)}
+  .rc-shared{max-width:880px; margin:1.6rem auto 0; font-size:.86rem; color:var(--grey);
+    font-style:italic; font-family:var(--sans)}
+  @media (max-width:900px){
+    .rc-scrolly{grid-template-columns:1fr}
+    .rc-sticky{grid-column:1; grid-row:1; position:sticky; top:0; height:auto; max-height:58vh;
+      background:#fff; padding:10px 0; z-index:5; overflow:auto; box-shadow:0 10px 18px rgba(18,35,58,.07)}
+    .rc-steps{grid-column:1; grid-row:2}
+    .rc-step{min-height:64vh}
+    .sgz{font-size:.7rem}
+    .sgz th,.sgz td{padding:6px 4px}
+    .rc-arow{grid-template-columns:1fr; gap:8px}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .rc-step,.sgz th,.sgz td{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+<nav style="position:absolute; top:0; left:0; right:0; z-index:4; display:flex; justify-content:space-between; align-items:center; max-width:980px; margin:0 auto; padding:1.3rem 1.5rem; font-family:var(--mono); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase">
+  <a href="/" style="color:var(--blue); text-decoration:none">&larr; Sasha Schaps</a>
+  <a href="/#work" style="color:var(--blue); text-decoration:none; opacity:.75">All projects</a>
+</nav>
+  <div class="hero-inner">
+    <div class="eyebrow">Group 2 <span class="dot">&bull;</span> DATASCI 203.5 <span class="dot">&bull;</span> UC Berkeley School of Information</div>
+    <h1>Project Raincheck</h1>
+    <p class="dek" style="margin-bottom:.4rem"><em>The loose promise of El Niño, quantified.</em></p>
+    <p class="dek">Seventy-six California water years, one Pacific thermostat, and the question every reservoir operator asks in October: does the ocean know something we don't?</p>
+    <div class="byline">By <strong>Daniel Bowd</strong>, <strong>Gunhui (Simon) Kim</strong>, <strong>Rishi Raj</strong> &amp; <strong>Sasha Schaps</strong></div>
+  </div>
+  <svg id="skyline" preserveAspectRatio="none"></svg>
+  <div class="scroll-hint">SCROLL &darr;</div>
+</header>
+
+<section class="prose">
+  <p>California does not do average. Statewide precipitation over a water year — October through the following September — runs about 22 inches, but the state routinely lands six inches above or below it. Whole reservoirs, hydropower forecasts, and allocation fights live inside that swing, which is why the Department of Water Resources, the Bureau of Reclamation, and PG&amp;E all watch the tropical Pacific every fall.</p>
+  <p>What they're watching is <mark>ENSO</mark> — the El Niño–Southern Oscillation, a slow slosh of warm and cool water along the equator. When the Niño&nbsp;3.4 region runs hot, it's an <span class="phase-chip chip-en">El Niño</span>; cold, a <span class="phase-chip chip-ln">La Niña</span>; in between, <span class="phase-chip chip-nt">Neutral</span>. Decades of research — Schonher &amp; Nicholson in 1989, Redmond &amp; Koch in 1991, Cayan and colleagues in 1999 — links El Niño winters to wetter Californias.</p>
+  <p>But the folklore version — <em>El Niño means rain</em> — keeps failing in public. So we asked a more precise question: not <em>which label</em> a year wears, but <em>how much intensity matters</em>. Scroll on.</p>
+</section>
+
+
+<section class="parks">
+  <div class="parks-inner">
+    <h2>Five Californias, one number</h2>
+    <p class="sub">Before we average the state into a single figure, it's worth remembering what that figure is averaging. Each of these places lives on a different kind of water — and each has a rain gauge with a real record behind it.</p>
+    <div class="parks-stage">
+      <canvas id="parkgl" role="img" aria-label="Stylised landscape of the selected California park"></canvas>
+      <div class="pk-scrim"></div>
+      <div class="pk-cap">
+        <span class="pk-kicker" id="pk-kicker">01 / 05</span>
+        <h3 id="pk-name">Mount Shasta</h3>
+        <p id="pk-note"></p>
+        <div class="pk-gauge" id="pk-gauge"></div>
+      </div>
+      <button class="pk-nav pk-prev" id="pk-prev" aria-label="Previous place">&#8249;</button>
+      <button class="pk-nav pk-next" id="pk-next" aria-label="Next place">&#8250;</button>
+    </div>
+    <div class="pk-thumbs" id="pk-thumbs"></div>
+    <p class="parks-note">Every one of these gauges is a single dot in the statewide average &mdash; and <b>Muir Woods is the reason to be careful with it</b>: coast redwoods pull a large share of their summer water from fog condensing on their needles and dripping to the ground. No rain gauge counts that. The statewide number is a useful instrument, not a complete one.</p>
+  </div>
+</section>
+
+<section class="scrolly">
+  <div class="graphic"><svg id="chart" viewBox="0 0 1000 620" role="img" aria-label="Interactive chart of 76 California water years, transitioning from a timeline of precipitation to a scatter against winter ONI"></svg></div>
+  <div class="steps" id="steps">
+    <div class="step" data-step="0"><div class="step-card"><span class="kicker">1950–2025</span><strong>Seventy-six water years.</strong> Each bar is one year of statewide precipitation. The mean is boring; the variance is the story.</div></div>
+    <div class="step" data-step="1"><div class="step-card"><span class="kicker">Add the ocean</span>Now color each year by its winter ENSO phase: <span class="phase-chip chip-ln">La Niña</span>, <span class="phase-chip chip-nt">Neutral</span>, <span class="phase-chip chip-en">El Niño</span>. Squint and the orange bars look taller. Squint harder and they don't.</div></div>
+    <div class="step" data-step="2"><div class="step-card"><span class="kicker">The legend is born</span><strong>1983 and 1998</strong> — the two monster El Niños of the century — delivered record-soaked winters. This is where the folklore comes from.</div></div>
+    <div class="step" data-step="3"><div class="step-card"><span class="kicker">The legend breaks</span><strong>2016</strong> arrived as the strongest El Niño ever measured to that point (winter ONI +2.6&nbsp;°C) — and produced a nearly average year. Meanwhile <strong>2017</strong> (Neutral) and <strong>2023</strong> (La Niña) were drenched.</div></div>
+    <div class="step" data-step="4"><div class="step-card"><span class="kicker">Rearrange</span>So forget the calendar. Line the same 76 years up by <strong>winter ONI</strong> — the intensity of the event, not just its name — and let the shape speak.</div></div>
+    <div class="step" data-step="5"><div class="step-card"><span class="kicker">The slope</span>There it is: a real upward tilt. On the official statewide series, each additional °C of winter ONI associates with <strong>~2.6 more inches</strong> of precipitation (robust p&nbsp;&lt;&nbsp;0.001) — but with R²&nbsp;=&nbsp;0.19, the cloud around the line is the honest part.</div></div>
+    <div class="step" data-step="6"><div class="step-card"><span class="kicker">Labels vs. intensity</span>Here's the twist: model the <em>labels</em> alone and significance largely evaporates (El Niño p&nbsp;=&nbsp;0.079; La Niña p&nbsp;=&nbsp;0.399). <strong>Intensity is the signal; the phase name is mostly noise.</strong> And notice the spread — El Niño years are the <em>most</em> variable of all.</div></div>
+  </div>
+</section>
+
+<section class="band">
+  <input type="checkbox" id="blur" checked>
+  <input type="radio" name="ripples" id="r3">
+  <input type="radio" name="ripples" id="r4" checked>
+  <input type="radio" name="ripples" id="r5">
+  <input type="radio" name="speed" id="s1">
+  <input type="radio" name="speed" id="s2">
+  <input type="radio" name="speed" id="s3" checked>
+  <input type="radio" name="speed" id="s4">
+  <div class="ripple-scene" aria-hidden="true">
+    <div class="dropzone dz1"><i class="rip" data-ring="1" style="--i:0"></i><i class="rip" data-ring="2" style="--i:1"></i><i class="rip" data-ring="3" style="--i:2"></i><i class="rip" data-ring="4" style="--i:3"></i><i class="rip" data-ring="5" style="--i:4"></i></div>
+    <div class="dropzone dz2"><i class="rip" data-ring="1" style="--i:2"></i><i class="rip" data-ring="2" style="--i:3"></i><i class="rip" data-ring="3" style="--i:0"></i><i class="rip" data-ring="4" style="--i:1"></i><i class="rip" data-ring="5" style="--i:4"></i></div>
+    <div class="dropzone dz3"><i class="rip" data-ring="1" style="--i:1"></i><i class="rip" data-ring="2" style="--i:4"></i><i class="rip" data-ring="3" style="--i:3"></i><i class="rip" data-ring="4" style="--i:0"></i><i class="rip" data-ring="5" style="--i:2"></i></div>
+  </div>
+  <div class="band-inner">
+    <h2>ENSO doesn't decide the year.<br>It <em>shifts the odds</em>.</h2>
+    <div class="stats">
+      <div class="stat"><div class="num">2.6&nbsp;in/°C</div><div class="lab">Headline slope — stable at 2.2–2.8 across five of six specifications with HC1 robust standard errors; only the near-collinear rSOI column sits lower</div></div>
+      <div class="stat"><div class="num">~7.7&nbsp;in</div><div class="lab">Expected swing between strong events (winter ONI +1.5 vs −1.5 °C) — a third of the state's mean year</div></div>
+      <div class="stat"><div class="num">R²&nbsp;=&nbsp;0.19</div><div class="lab">The loose part: four-fifths of the variation in any year comes from everything ENSO is not</div></div>
+      <div class="stat"><div class="num">SD&nbsp;7.4&nbsp;vs&nbsp;4.8</div><div class="lab">El Niño years are the most variable phase — not "expect wet," but "expect the unexpected"</div></div>
+    </div>
+  </div>
+  
+</section>
+
+<section class="ocean-wrap">
+  <h2>Deep dive: two ways to read the same ocean</h2>
+  <p class="sub">Everything above hangs on one number per winter. Here's the instrument panel — drag the slider to change the state of the tropical Pacific and watch what each index reports.</p>
+  <div class="ocean-panel">
+    <canvas id="ocean"></canvas>
+    <div class="ui">
+      <div class="ui-top">
+        <div class="label">&#9685; &nbsp;N I &Ntilde; O &nbsp;3 . 4</div>
+        <div class="mood">
+          <span id="mood-name">NEUTRAL</span>
+          <span class="mood-time" id="mood-time">ONI +0.0 &deg;C</span>
+        </div>
+      </div>
+      <div class="ui-bottom">
+        <p class="caption">Same sea &mdash; <em>every degree a different California.</em></p>
+        <div class="slider-wrap">
+          <span class="slider-end">LA NI&Ntilde;A</span>
+          <input type="range" id="oni-slider" min="-200" max="300" value="0" aria-label="Winter ONI in degrees Celsius">
+          <span class="slider-end">EL NI&Ntilde;O</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ocean-readout">
+    <div class="cell"><div class="k">ONI &mdash; temperature</div><div class="v" id="ro-oni">+0.0 &deg;C</div></div>
+    <div class="cell"><div class="k">rSOI &mdash; pressure <small>(typical companion, illustrative)</small></div><div class="v" id="ro-rsoi">+0.0</div></div>
+    <div class="cell"><div class="k">Expected precip shift vs. neutral <small>(at 2.6 in/&deg;C)</small></div><div class="v" id="ro-precip">&plusmn;0.0 in</div></div>
+    <div class="cell"><div class="k">Closest real winter</div><div class="v" id="ro-match">&mdash;</div></div>
+  </div>
+  <div class="idx-cards">
+    <div class="idx-card">
+      <h3><span>INDEX 01 &middot; WHAT THE WATER FEELS LIKE</span>ONI &mdash; Oceanic Ni&ntilde;o Index</h3>
+      <p>A 3-month running mean of sea-surface-temperature anomalies (ERSSTv5) averaged over the Ni&ntilde;o&nbsp;3.4 box of the equatorial Pacific (5&deg;N&ndash;5&deg;S, 120&deg;W&ndash;170&deg;W).</p>
+      <p>Anomalies are measured against centered 30-year climatologies that NOAA updates every five years &mdash; so a warming ocean isn't misread as a permanent El Ni&ntilde;o. Our predictor, <code>oni_djf</code>, is the December&ndash;February value.</p>
+    </div>
+    <div class="idx-card">
+      <h3><span>INDEX 02 &middot; WHAT THE AIR IS DOING</span>rSOI &mdash; reversed Southern Oscillation Index</h3>
+      <p>The SOI is pressure-based: standardized sea-level pressure at Tahiti minus Darwin, as departures from the 1981&ndash;2010 base period (NOAA NCEI). Negative SOI coincides with El&nbsp;Ni&ntilde;o &mdash; the opposite sign convention to the ONI.</p>
+      <p>So <code>rsoi</code> is the November&ndash;March mean SOI &times; (&minus;1): positive means El Ni&ntilde;o for both indices in this report.</p>
+      <div class="agree">AGREEMENT AS METRIC MEASURES: r = 0.87 &middot; NO YEAR EVER FLIPS LA NI&Ntilde;A &harr; EL NI&Ntilde;O BETWEEN CODINGS</div>
+    </div>
+  </div>
+</section>
+
+<section class="stations-wrap">
+  <div class="stations-inner">
+    <h2>The gauges behind the number</h2>
+    <p class="sub">Every statewide inch is an average over a network of rain gauges. Here are 282 GHCN stations with at least a decade of complete water years, colored by what an average year drops on each — the stations alone trace the shape of the state. Hover any dot.</p>
+    <div class="map-grid">
+      <svg id="stmap" viewBox="0 0 520 560" role="img" aria-label="Map of 282 California rain gauge stations, colored by mean annual precipitation"></svg>
+      <div class="map-side">
+        <div class="map-stat">One state.<br>Forty-three Californias.</div>
+        <p>The wettest gauge in this network — <strong>Gasquet Ranger Station</strong>, on the Smith River near the Oregon border — averages <strong>89.6 inches</strong> a year. The driest, <strong>Imperial County Airport</strong> in the southeastern desert, averages <strong>2.1</strong>. Same state, same statistic, a 43&times; difference.</p>
+        <div class="map-legend">
+          Mean annual precipitation
+          <div class="bar"></div>
+          <div class="ends"><span>2 in &middot; desert</span><span>90 in &middot; north coast</span></div>
+        </div>
+        <p>This is why "statewide precipitation" is a blunt instrument — and why Jong et&nbsp;al. (2016) matters: the ENSO signal concentrates <em>south</em> of the dashed line, in the dry half. Averaging a strong SoCal response with a weak, wet NorCal one understates the effect exactly where it operates.</p>
+      </div>
+    </div>
+  </div>
+  <div id="st-tip"></div>
+</section>
+
+<section class="results-wrap">
+  <h2>Six models, one table</h2>
+  <p class="sub">One row per water year, WY 1950–2025. Outcome: statewide precipitation (NOAA Climate at a Glance). Predictor: December–February Oceanic Niño Index (NOAA CPC), kept continuous — a weak and a very strong El Niño are different events — with the pressure-based rSOI joining in the final column as a cross-check. Economists call what follows a <strong>stargazer table</strong>: every model in its own column, every coefficient wearing its standard error underneath and its stars beside. It rewards slow reading — so read it slowly. Scroll, and the table will follow along.</p>
+</section>
+
+<section class="rc-scrolly">
+    <div class="rc-steps" id="rc-steps">
+      <div class="rc-step" data-focus="">
+        <div class="rc-card">
+          <h3>How to hold it</h3>
+          <p>Rows are variables; columns are models. Each cell shows the coefficient, its
+            <b>HC1 robust standard error</b> in parentheses, and stars for significance
+            (<span class="star">*</span> p&lt;0.1, <span class="star">**</span> p&lt;0.05,
+            <span class="star">***</span> p&lt;0.01).</p>
+          <p>Robust errors are the seatbelt: they never change where the estimate lands, only how
+            confidently we're allowed to talk about it — and the fan in the scatter above is why we buckle up.</p>
+        </div>
+      </div>
+      <div class="rc-step" data-focus="m1">
+        <div class="rc-card rc-m1">
+          <h3>Model 1 · the headline</h3>
+          <p><span class="stat">+2.550 in/°C</span></p>
+          <p>Intensity, kept continuous. Each additional °C of winter ONI associates with about two and a
+            half more inches of statewide rain, and the estimate clears every conventional threshold
+            (robust p &lt; 0.001).</p>
+          <p>This is the estimand. Everything else in the table is a stress test of this number.</p>
+        </div>
+      </div>
+      <div class="rc-step" data-focus="m2">
+        <div class="rc-card rc-m2">
+          <h3>Model 2 · the folklore, formalized</h3>
+          <p>Replace the thermometer with the <b>labels</b> — El Niño and La Niña dummies against a Neutral
+            baseline — and the stars mostly go out: El Niño p = 0.079, La Niña p = 0.399, R² drops to 0.108.</p>
+          <p>Binning at ±0.5 °C files 2016's monstrous +2.6 °C in the same drawer as a barely-there +0.5 °C.
+            <b>Intensity is the signal; the phase name is mostly noise.</b></p>
+        </div>
+      </div>
+      <div class="rc-step" data-focus="m3">
+        <div class="rc-card rc-m3">
+          <h3>Model 3 · the stress test</h3>
+          <p>Could last winter's ocean, or a slow secular trend, be confounding the slope? Add both.
+            Neither earns a star (lag p = 0.30, trend p = 0.54) — and the ONI slope barely moves:
+            <b>2.550 → 2.750</b>.</p>
+          <p>That stability across specifications is the robustness argument. Parsimony sends us back to
+            Model 1.</p>
+        </div>
+      </div>
+      <div class="rc-step" data-focus="m4">
+        <div class="rc-card rc-m4">
+          <h3>Model 4 · the same tilt, in percent</h3>
+          <p>Log the outcome and the coefficient changes language: 100·(e<sup>0.105</sup> − 1) ≈
+            <b>11.1% more rain per °C</b>, multiplicatively.</p>
+          <p>Two catches travel with the transform: back-transformed predictions are geometric means
+            (slightly below the arithmetic means planners budget with), and its R² lives on a different
+            outcome scale — it cannot be compared to the other columns.</p>
+        </div>
+      </div>
+      <div class="rc-step" data-focus="m5">
+        <div class="rc-card rc-m5">
+          <h3>Model 5 · the bend test</h3>
+          <p>Do the monster winters pull harder than a straight line allows? Add ONI². The curvature
+            points the expected way — extremes wetter than the line predicts — but it never earns a star
+            (robust p ≈ 0.19), and the linear term barely moves.</p>
+          <p>A line survives its stress test. A true threshold response, if one exists, would need more
+            than 76 winters to convict.</p>
+        </div>
+      </div>
+      <div class="rc-step" data-focus="m6">
+        <div class="rc-card rc-m6">
+          <h3>Model 6 · two thermometers, one ocean</h3>
+          <p>Nest the pressure-based rSOI — and the El Niño label — beside the ONI. Every star goes out,
+            the ONI's included, because ONI and rSOI move together at r = 0.87: near-collinearity splits
+            one signal across two coefficients and inflates every standard error.</p>
+          <p>The lesson isn't "no effect." It's that the second index carries no information the first
+            didn't already have — R² barely moves (0.199 vs 0.187) while the noise doubles.</p>
+        </div>
+      </div>
+      <div class="rc-step" data-focus="fit">
+        <div class="rc-card">
+          <h3>The bottom rows do the judging</h3>
+          <p>Model 3 wins raw R² (0.218), but raw R² can only rise when you add regressors. <b>Adjusted R²
+            charges rent</b> for each extra term — and after rent, the quadratic's 0.188 and Model 3's 0.184
+            sit barely above Model 1's 0.176, so the extra coefficients barely pay for themselves.</p>
+          <p>And every column agrees on the ceiling: ENSO explains roughly a fifth of the variance.
+            The other four-fifths is everything ENSO is not.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rc-sticky">
+      <div class="tblwrap" id="rc-tblwrap" data-focus="">
+        <table class="sgz" aria-label="Regression results for four models">
+          <caption>Statewide precipitation on winter ENSO intensity, WY 1950–2025</caption>
+          <thead>
+            <tr>
+              <th></th>
+              <th data-m="1">(1) Linear</th><th data-m="2">(2) Phase</th>
+              <th data-m="3">(3) Lag + trend</th><th data-m="4">(4) Log-linear</th>
+              <th data-m="5">(5) Quadratic</th><th data-m="6">(6) ONI + rSOI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Dependent variable</td>
+              <td data-m="1">precip_in</td>
+              <td data-m="2">precip_in</td>
+              <td data-m="3">precip_in</td>
+              <td data-m="4">ln(precip_in)</td>
+              <td data-m="5">precip_in</td>
+              <td data-m="6">precip_in</td></tr>
+            <tr><td>Winter ONI (°C)</td>
+              <td data-m="1">2.550<span class="star">***</span><span class="se">(0.661)</span></td>
+              <td data-m="2">—</td>
+              <td data-m="3">2.750<span class="star">***</span><span class="se">(0.675)</span></td>
+              <td data-m="4">0.105<span class="star">***</span><span class="se">(0.027)</span></td>
+              <td data-m="5">2.248<span class="star">***</span><span class="se">(0.613)</span></td>
+              <td data-m="6">2.045<span class="se">(1.446)</span></td></tr>
+            <tr><td>El Niño (0/1)</td>
+              <td data-m="1">—</td>
+              <td data-m="2">3.315<span class="star">*</span><span class="se">(1.859)</span></td>
+              <td data-m="3">—</td><td data-m="4">—</td>
+              <td data-m="5">—</td><td data-m="6">−1.177<span class="se">(2.538)</span></td></tr>
+            <tr><td>La Niña (0/1)</td>
+              <td data-m="1">—</td>
+              <td data-m="2">−1.231<span class="se">(1.450)</span></td>
+              <td data-m="3">—</td><td data-m="4">—</td>
+              <td data-m="5">—</td><td data-m="6">—</td></tr>
+            <tr><td>Prev. winter ONI (°C)</td>
+              <td data-m="1">—</td><td data-m="2">—</td>
+              <td data-m="3">0.605<span class="se">(0.575)</span></td>
+              <td data-m="4">—</td><td data-m="5">—</td><td data-m="6">—</td></tr>
+            <tr><td>Time trend (years)</td>
+              <td data-m="1">—</td><td data-m="2">—</td>
+              <td data-m="3">−0.017<span class="se">(0.028)</span></td>
+              <td data-m="4">—</td><td data-m="5">—</td><td data-m="6">—</td></tr>
+            <tr><td>Winter ONI² (°C²)</td>
+              <td data-m="1">—</td><td data-m="2">—</td><td data-m="3">—</td>
+              <td data-m="4">—</td>
+              <td data-m="5">0.734<span class="se">(0.558)</span></td>
+              <td data-m="6">—</td></tr>
+            <tr><td>Reversed SOI</td>
+              <td data-m="1">—</td><td data-m="2">—</td><td data-m="3">—</td>
+              <td data-m="4">—</td><td data-m="5">—</td>
+              <td data-m="6">1.222<span class="se">(1.570)</span></td></tr>
+            <tr><td>Constant</td>
+              <td data-m="1">22.236<span class="star">***</span><span class="se">(0.633)</span></td>
+              <td data-m="2">21.562<span class="star">***</span><span class="se">(1.202)</span></td>
+              <td data-m="3">22.759<span class="star">***</span><span class="se">(1.094)</span></td>
+              <td data-m="4">3.064<span class="star">***</span><span class="se">(0.030)</span></td>
+              <td data-m="5">21.465<span class="star">***</span><span class="se">(0.865)</span></td>
+              <td data-m="6">22.608<span class="star">***</span><span class="se">(1.018)</span></td></tr>
+            <tr class="fitrow"><td>Observations</td>
+              <td data-m="1">76</td><td data-m="2">76</td><td data-m="3">75</td><td data-m="4">76</td><td data-m="5">76</td><td data-m="6">76</td></tr>
+            <tr class="fitrow"><td>R²</td>
+              <td data-m="1">0.187</td><td data-m="2">0.108</td><td data-m="3">0.218</td><td data-m="4">0.146</td><td data-m="5">0.210</td><td data-m="6">0.199</td></tr>
+            <tr class="fitrow"><td>Adjusted R²</td>
+              <td data-m="1">0.176</td><td data-m="2">0.084</td><td data-m="3">0.184</td><td data-m="4">0.135</td><td data-m="5">0.188</td><td data-m="6">0.166</td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="7">HC1 heteroskedasticity-robust SEs in parentheses ·
+              <span class="star">*</span>p&lt;0.1 <span class="star">**</span>p&lt;0.05
+              <span class="star">***</span>p&lt;0.01 · Model 2 reference: Neutral · Model 3 drops WY1950
+              (lag undefined); all other models use all 76 water years.</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="results-wrap">
+  <h2>Diagnostics, not vibes</h2>
+  <p class="sub">With n = 76 we lean on the <strong>large-sample</strong> OLS assumptions — which means normal errors are a courtesy, not a requirement, and the real work is checking the other four honestly.</p>
+  <div class="rc-assump">
+    <div class="rc-arow"><h4>1 · IID sampling</h4><span class="rc-pill warn">Partly</span>
+      <p>Water years form a time series, not a random draw. The dependence looks mild — residual lag-1
+        autocorrelation ≈ 0.08, Durbin–Watson = 1.82 — but robust SEs fix heteroskedasticity, not serial
+        correlation.</p></div>
+    <div class="rc-arow"><h4>2 · No perfect collinearity</h4><span class="rc-pill ok">Met</span>
+      <p>ONI, its lag, and the time trend are nearly orthogonal (all VIFs ≈ 1); every design matrix is
+        full rank.</p></div>
+    <div class="rc-arow"><h4>3 · Linear conditional expectation</h4><span class="rc-pill ok">Met (approx.)</span>
+      <p>A quadratic ONI term is insignificant (robust p ≈ 0.19), so a line is a fair approximation —
+        though a threshold response can't be ruled out at this sample size.</p></div>
+    <div class="rc-arow"><h4>4 · Homoskedasticity</h4><span class="rc-pill bad">Violated → handled</span>
+      <p>Breusch–Pagan p = 0.033 and the visible fan at high ONI reject constant variance. This is why
+        every standard error on this page is HC1 robust.</p></div>
+    <div class="rc-arow"><h4>5 · Normal errors</h4><span class="rc-pill ok">Not needed (n = 76)</span>
+      <p>Model 1 residuals pass Shapiro–Wilk comfortably (p = 0.97); Model 4's less so (p = 0.015).
+        Either way the CLT carries the inference.</p></div>
+  </div>
+
+</section>
+
+<section class="results-wrap">
+  <h2>What each model cannot tell you</h2>
+  <p class="sub">Limitations here are design trade-offs, not mistakes — every specification buys its insight by giving something up.</p>
+  <div class="rc-limgrid">
+    <div class="rc-lim rc-l1"><h3>1 · Linear</h3><ul>
+      <li>R² = 0.19: four-fifths of any year is atmospheric rivers and storm-track luck — everything ENSO is not.</li>
+      <li>1983 carries real leverage (Cook's D ≈ 0.29 at n = 76); the slope leans on two monster winters.</li>
+      <li>Forces one constant inches-per-°C effect across the whole ONI range; a threshold response would be invisible.</li>
+    </ul></div>
+    <div class="rc-lim rc-l2"><h3>2 · Phase dummies</h3><ul>
+      <li>Discards intensity: +2.6 °C (2016) and +0.5 °C land in the same bucket.</li>
+      <li>±0.5 °C cutoffs are a NOAA convention, not an estimate — results inherit that arbitrariness.</li>
+      <li>Weakest fit (R² = 0.108) and no coefficient clears p &lt; 0.05: labels alone ≈ noise.</li>
+    </ul></div>
+    <div class="rc-lim rc-l3"><h3>3 · Lag + trend</h3><ul>
+      <li>Neither added term is significant (lag p = 0.30, trend p = 0.54): extra complexity, no extra insight.</li>
+      <li>Drops WY1950 (n = 75) and burns two more degrees of freedom in a small sample.</li>
+      <li>Adjusted-R² edge over Model 1 is marginal (0.184 vs 0.176); parsimony favors Model 1.</li>
+    </ul></div>
+    <div class="rc-lim rc-l4"><h3>4 · Log-linear</h3><ul>
+      <li>Back-transformed predictions are geometric means — systematically below the arithmetic mean planners budget with.</li>
+      <li>Residual normality is worse in logs (Shapiro p = 0.015); the transform wasn't needed for skew here.</li>
+      <li>Its R² is not comparable to the level-outcome models: the outcome variable itself changed.</li>
+    </ul></div>
+    <div class="rc-lim rc-l5"><h3>5 · Quadratic</h3><ul>
+      <li>The curvature never earns a star (robust p ≈ 0.19): a bend may be real, but this sample can't prove it.</li>
+      <li>The squared term leans on the same handful of very strong events that give 1983 its leverage in the line.</li>
+      <li>Even if the bend were confirmed, a planner still can't act on it without knowing the winter's ONI in advance.</li>
+    </ul></div>
+    <div class="rc-lim rc-l6"><h3>6 · ONI + rSOI + phase</h3><ul>
+      <li>ONI and rSOI correlate at 0.87 — the design is nearly collinear, and every standard error inflates.</li>
+      <li>The El Niño dummy is redundant beside two continuous indices; its coefficient even flips sign.</li>
+      <li>Best read as a robustness check, not a candidate model: it shows the result isn't an artifact of one index.</li>
+    </ul></div>
+  </div>
+  <p class="rc-shared">Shared limitation: statewide averaging dilutes a signal Jong et al. (2016) show is
+    concentrated in Southern California — and none of this is causal or predictive.</p>
+
+</section>
+
+
+<section class="results-wrap">
+  <h2>If the promise is loose, what do you do with it?</h2>
+  <p class="sub">Two places where the answer matters in practice: managing water, and building the infrastructure
+     that depends on it. In both, the models above argue for the same stance &mdash; treat an ENSO forecast as a
+     tilt in the odds, and let the extremes, not the phase-conditioned averages, set the hard constraints.</p>
+
+  <div class="rc-limgrid">
+    <div class="rc-lim rc-l1"><h3>Water supply: plan on distributions</h3><ul>
+      <li>A seasonal ENSO outlook arrives in fall, before the water year &mdash; real lead time. But with R&sup2; &asymp; 0.19, it should move readiness (staffing, wet-year capture permits, transfer options), not commitments.</li>
+      <li>The clearest El Ni&ntilde;o promise in this record is <em>variance</em>: the biggest winters (1983, 1998) were strong El Ni&ntilde;os, but 2015&ndash;16 &mdash; the strongest event in the series &mdash; delivered a merely average year statewide. Pricing water transfers off the label alone repeats that mistake.</li>
+      <li>Wet-year capture is where the tilt pays: groundwater recharge (Flood-MAR-style diversions) turns the fat right tail into storage without betting on any single winter.</li>
+    </ul></div>
+
+    <div class="rc-lim rc-l2"><h3>Reservoir operations: trust shorter forecasts</h3><ul>
+      <li>Flood-control releases hinge on individual atmospheric rivers, which ENSO does not schedule. Forecast-informed reservoir operations (FIRO, piloted at Lake Mendocino and Prado Dam) act on skillful 1&ndash;5&nbsp;day forecasts instead of the seasonal label.</li>
+      <li>An El Ni&ntilde;o winter is a reason to rehearse pre-releases and check encroachment rules early &mdash; not to hold the flood pool differently all season on the strength of a 0.19&nbsp;R&sup2;.</li>
+      <li>La Ni&ntilde;a's dry tilt compounds across consecutive years (2021&ndash;22 in this record); multi-year drought sequencing, not any single winter, is what stresses carryover storage.</li>
+    </ul></div>
+
+    <div class="rc-lim rc-l3"><h3>Nuclear siting: water as design basis</h3><ul>
+      <li>Reactors need a guaranteed heat sink, so licensing turns on extremes: design-basis flood on the wet side, low-water and cooling-supply reliability on the dry side. Those bounds must come from the full record across all ENSO phases plus trend &mdash; a phase-conditioned mean is exactly the wrong statistic.</li>
+      <li>Strong El Ni&ntilde;o winters raise coastal sea level and wave energy along California (1982&ndash;83 and 1997&ndash;98 were landmark erosion winters), which is the relevant ENSO channel for a coastal, ocean-cooled site like Diablo Canyon &mdash; shoreline attack, not supply.</li>
+      <li>For inland, river- or reservoir-cooled sites, the La Ni&ntilde;a side binds: sustained drought lowers intake elevations and tightens thermal-discharge limits, the mechanism behind heat-and-drought power derates seen at river-cooled plants in the U.S. and Europe.</li>
+    </ul></div>
+
+    <div class="rc-lim rc-l4"><h3>New builds: decouple from the winter</h3><ul>
+      <li>Siting choices can buy independence from hydrology altogether: Palo Verde runs in the Sonoran Desert on treated municipal wastewater, and dry or hybrid cooling trades a few points of efficiency for indifference to what ENSO does.</li>
+      <li>For small modular reactor siting in the West, that trade is the honest hedge &mdash; a design that doesn't need the wet years never has to guess which label the winter will wear.</li>
+      <li>Same conclusion as the regressions, one level up: use the ENSO signal to time preparation, and engineer the things that can't fail so the signal doesn't matter.</li>
+    </ul></div>
+  </div>
+  <p class="rc-shared">These are planning considerations, not findings of this analysis &mdash; the models above are
+     descriptive, statewide, and say nothing about any specific basin, shoreline, or site.</p>
+</section>
+
+<section class="foot">
+  <div class="foot-inner">
+    <h3>The honest fine print</h3>
+    <p><strong>The statistical fine print</strong> — assumptions, diagnostics, and each model's limitations — lives in the sections above. The analysis remains descriptive, not causal or predictive.</p>
+    <p><strong>About the chart data.</strong> The interactive charts on this page are drawn from a 284-station GHCN monthly subset aggregated by the authors (two-step: station water-year totals, then a cross-station mean); its fitted slope is shallower than the official NOAA Climate at a Glance series that the reported estimates use. Same shape, honest difference.</p>
+    <p><strong>References.</strong> Cayan, Redmond &amp; Riddle (1999); Redmond &amp; Koch (1991); Schonher &amp; Nicholson (1989); Jong et&nbsp;al. (2016); Guirguis et&nbsp;al. (2024); NOAA CPC ONI; NOAA NCEI Climate at a Glance.</p>
+    <p><strong>Energy note.</strong> Fitting for the subject, this page is built to sip: every animation pauses when its section leaves the viewport, the ocean renders at half frame-rate, the landscape gallery draws only during transitions, and the whole page is a single file with no external requests.</p>
+    <div class="brand"><span>Group 2 · DATASCI 203.5</span><span>UC Berkeley School of Information</span></div>
+  </div>
+</section>
+
+<script>
+const DATA = [{"y":1950,"p":18.1,"o":-1.53,"ph":"ln"},{"y":1951,"p":21.7,"o":-0.82,"ph":"ln"},{"y":1952,"p":30.4,"o":0.53,"ph":"en"},{"y":1953,"p":20.3,"o":0.4,"ph":"nt"},{"y":1954,"p":20.1,"o":0.76,"ph":"en"},{"y":1955,"p":16.3,"o":-0.68,"ph":"ln"},{"y":1956,"p":27.5,"o":-1.11,"ph":"ln"},{"y":1957,"p":18.2,"o":-0.25,"ph":"nt"},{"y":1958,"p":32.6,"o":1.81,"ph":"en"},{"y":1959,"p":14.9,"o":0.61,"ph":"en"},{"y":1960,"p":15.9,"o":-0.1,"ph":"nt"},{"y":1961,"p":15.5,"o":0.04,"ph":"nt"},{"y":1962,"p":21.1,"o":-0.24,"ph":"nt"},{"y":1963,"p":24.2,"o":-0.4,"ph":"nt"},{"y":1964,"p":15.2,"o":1.07,"ph":"en"},{"y":1965,"p":24.1,"o":-0.59,"ph":"ln"},{"y":1966,"p":18.7,"o":1.37,"ph":"en"},{"y":1967,"p":29.0,"o":-0.41,"ph":"nt"},{"y":1968,"p":17.2,"o":-0.64,"ph":"ln"},{"y":1969,"p":31.6,"o":1.13,"ph":"en"},{"y":1970,"p":21.6,"o":0.51,"ph":"en"},{"y":1971,"p":21.9,"o":-1.36,"ph":"ln"},{"y":1972,"p":14.2,"o":-0.71,"ph":"ln"},{"y":1973,"p":26.7,"o":1.84,"ph":"en"},{"y":1974,"p":28.0,"o":-1.84,"ph":"ln"},{"y":1975,"p":21.7,"o":-0.54,"ph":"ln"},{"y":1976,"p":14.6,"o":-1.56,"ph":"ln"},{"y":1977,"p":11.5,"o":0.71,"ph":"en"},{"y":1978,"p":35.0,"o":0.69,"ph":"en"},{"y":1979,"p":21.8,"o":0.03,"ph":"nt"},{"y":1980,"p":30.3,"o":0.59,"ph":"en"},{"y":1981,"p":17.2,"o":-0.26,"ph":"nt"},{"y":1982,"p":36.4,"o":-0.05,"ph":"nt"},{"y":1983,"p":43.8,"o":2.18,"ph":"en"},{"y":1984,"p":23.4,"o":-0.6,"ph":"ln"},{"y":1985,"p":19.4,"o":-1.04,"ph":"ln"},{"y":1986,"p":30.7,"o":-0.49,"ph":"nt"},{"y":1987,"p":14.1,"o":1.23,"ph":"en"},{"y":1988,"p":18.6,"o":0.81,"ph":"en"},{"y":1989,"p":20.1,"o":-1.69,"ph":"ln"},{"y":1990,"p":15.9,"o":0.14,"ph":"nt"},{"y":1991,"p":18.7,"o":0.41,"ph":"nt"},{"y":1992,"p":20.7,"o":1.71,"ph":"en"},{"y":1993,"p":34.1,"o":0.09,"ph":"nt"},{"y":1994,"p":16.2,"o":0.06,"ph":"nt"},{"y":1995,"p":39.6,"o":0.96,"ph":"en"},{"y":1996,"p":26.2,"o":-0.9,"ph":"ln"},{"y":1997,"p":28.3,"o":-0.5,"ph":"ln"},{"y":1998,"p":41.1,"o":2.24,"ph":"en"},{"y":1999,"p":22.4,"o":-1.55,"ph":"ln"},{"y":2000,"p":23.7,"o":-1.66,"ph":"ln"},{"y":2001,"p":18.2,"o":-0.68,"ph":"ln"},{"y":2002,"p":18.8,"o":-0.15,"ph":"nt"},{"y":2003,"p":25.2,"o":0.92,"ph":"en"},{"y":2004,"p":19.6,"o":0.37,"ph":"nt"},{"y":2005,"p":33.2,"o":0.64,"ph":"en"},{"y":2006,"p":32.7,"o":-0.85,"ph":"ln"},{"y":2007,"p":15.0,"o":0.66,"ph":"en"},{"y":2008,"p":18.4,"o":-1.64,"ph":"ln"},{"y":2009,"p":19.3,"o":-0.85,"ph":"ln"},{"y":2010,"p":24.9,"o":1.5,"ph":"en"},{"y":2011,"p":31.0,"o":-1.31,"ph":"ln"},{"y":2012,"p":15.8,"o":-0.72,"ph":"ln"},{"y":2013,"p":15.8,"o":-0.29,"ph":"nt"},{"y":2014,"p":12.8,"o":-0.28,"ph":"nt"},{"y":2015,"p":16.7,"o":0.69,"ph":"en"},{"y":2016,"p":22.3,"o":2.63,"ph":"en"},{"y":2017,"p":37.3,"o":-0.19,"ph":"nt"},{"y":2018,"p":17.0,"o":-0.77,"ph":"ln"},{"y":2019,"p":30.6,"o":0.89,"ph":"en"},{"y":2020,"p":16.7,"o":0.64,"ph":"en"},{"y":2021,"p":11.1,"o":-0.91,"ph":"ln"},{"y":2022,"p":19.1,"o":-0.82,"ph":"ln"},{"y":2023,"p":36.0,"o":-0.54,"ph":"ln"},{"y":2024,"p":23.4,"o":1.92,"ph":"en"},{"y":2025,"p":18.7,"o":-0.45,"ph":"nt"}];
+const PH = {ln:'#4472C4', nt:'#55A868', en:'#D2703A'};
+const PHNAME = {ln:'La Niña', nt:'Neutral', en:'El Niño'};
+const GREY = '#b9c6d1';
+
+/* ---------- hero skyline ---------- */
+(function(){
+  const svg = document.getElementById('skyline');
+  const W = 1000, H = 200;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const maxP = Math.max(...DATA.map(d=>d.p));
+  const bw = W / DATA.length;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  DATA.forEach((d,i)=>{
+    const h = (d.p/maxP) * (H-14);
+    const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x', i*bw + 1); r.setAttribute('width', bw-2);
+    r.setAttribute('y', H - h); r.setAttribute('height', h);
+    r.setAttribute('fill', PH[d.ph]); r.setAttribute('opacity', .28);
+    if(!reduce){
+      r.style.transformOrigin = `0 ${H}px`; r.style.transform = 'scaleY(0)';
+      r.style.transition = `transform .8s ${i*12}ms cubic-bezier(.2,.7,.3,1)`;
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ r.style.transform = 'scaleY(1)'; }));
+    }
+    svg.appendChild(r);
+  });
+})();
+
+/* ---------- main chart ---------- */
+const svg = document.getElementById('chart');
+const NS = 'http://www.w3.org/2000/svg';
+const W = 1000, H = 620, M = {t:46, r:36, b:64, l:64};
+const iw = W - M.l - M.r, ih = H - M.t - M.b;
+const maxP = 46;
+const yScale = p => M.t + ih - (p/maxP)*ih;
+const xYear = y => M.l + ((y-1950)/(2025-1950)) * iw;
+const oniMin = -2.1, oniMax = 2.9;
+const xOni = o => M.l + ((o-oniMin)/(oniMax-oniMin)) * iw;
+const el = (tag, attrs, parent) => { const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k, attrs[k]); (parent||svg).appendChild(e); return e; };
+const barW = iw/DATA.length * 0.72;
+
+/* y axis (shared) */
+const yAx = el('g', {class:'axis'});
+[0,10,20,30,40].forEach(v=>{
+  el('line', {x1:M.l, x2:W-M.r, y1:yScale(v), y2:yScale(v), stroke:'#e7edf3'}, yAx);
+  const t = el('text', {x:M.l-10, y:yScale(v)+4, 'text-anchor':'end'}, yAx); t.textContent = v;
+});
+const yTitle = el('text', {class:'axis-title', x:M.l-46, y:M.t-18}, yAx); yTitle.textContent='PRECIP (IN)';
+
+/* x axes: timeline + oni (toggle) */
+const axYear = el('g', {class:'axis'});
+for(let y=1950; y<=2020; y+=10){ const t=el('text',{x:xYear(y), y:H-M.b+24, 'text-anchor':'middle'},axYear); t.textContent=y; }
+const yrTitle = el('text',{class:'axis-title', x:M.l+iw/2, y:H-M.b+46, 'text-anchor':'middle'},axYear); yrTitle.textContent='WATER YEAR';
+
+const axOni = el('g', {class:'axis fade'});
+[-2,-1,0,1,2].forEach(v=>{
+  const t=el('text',{x:xOni(v), y:H-M.b+24, 'text-anchor':'middle'},axOni); t.textContent = v>0? '+'+v : v;
+  el('line',{x1:xOni(v),x2:xOni(v),y1:H-M.b+6,y2:H-M.b+10,stroke:'#cfd9e2'},axOni);
+});
+const oniTitle = el('text',{class:'axis-title', x:M.l+iw/2, y:H-M.b+46, 'text-anchor':'middle'},axOni); oniTitle.textContent='WINTER ONI (°C, DEC–FEB)';
+
+/* fit line + band (bootstrap-free simple OLS on displayed data) */
+const n = DATA.length;
+const mx = DATA.reduce((s,d)=>s+d.o,0)/n, my = DATA.reduce((s,d)=>s+d.p,0)/n;
+let sxx=0, sxy=0; DATA.forEach(d=>{ sxx+=(d.o-mx)**2; sxy+=(d.o-mx)*(d.p-my); });
+const b1 = sxy/sxx, b0 = my - b1*mx;
+const sse = DATA.reduce((s,d)=> s + (d.p-(b0+b1*d.o))**2, 0);
+const se2 = sse/(n-2);
+const bandPts = [];
+for(let o=oniMin; o<=oniMax+1e-9; o+=0.25){
+  const seFit = Math.sqrt(se2*(1/n + (o-mx)**2/sxx)) * 1.99;
+  bandPts.push([o, b0+b1*o - seFit, b0+b1*o + seFit]);
+}
+const bandPath = 'M ' + bandPts.map(p=>`${xOni(p[0])},${yScale(p[2])}`).join(' L ')
+  + ' L ' + bandPts.slice().reverse().map(p=>`${xOni(p[0])},${yScale(p[1])}`).join(' L ') + ' Z';
+const gFit = el('g', {class:'fade'});
+el('path', {d:bandPath, fill:'#003262', opacity:.10}, gFit);
+el('line', {x1:xOni(oniMin), y1:yScale(b0+b1*oniMin), x2:xOni(oniMax), y2:yScale(b0+b1*oniMax),
+            stroke:'#003262', 'stroke-width':2.5}, gFit);
+
+/* phase mean lines (step 6) */
+const gPhase = el('g', {class:'fade'});
+['ln','nt','en'].forEach(ph=>{
+  const ds = DATA.filter(d=>d.ph===ph);
+  const mean = ds.reduce((s,d)=>s+d.p,0)/ds.length;
+  const os = ds.map(d=>d.o);
+  const x1 = xOni(Math.min(...os)), x2 = xOni(Math.max(...os));
+  el('line',{x1:x1, x2:x2, y1:yScale(mean), y2:yScale(mean), stroke:PH[ph], 'stroke-width':2.5, 'stroke-dasharray':'6 4'}, gPhase);
+  const t = el('text',{class:'anno', x:x2+6, y:yScale(mean)+4, fill:PH[ph]}, gPhase);
+  t.textContent = `${PHNAME[ph]} mean ${mean.toFixed(1)}″`;
+  if(ph==='en'){ t.setAttribute('x', x1); t.setAttribute('y', yScale(mean)-8); }
+});
+
+/* year marks */
+const marks = DATA.map(d=>{
+  const r = el('rect', {class:'yr', fill:GREY, rx:1});
+  r.dataset.y = d.y;
+  const tip = el('title', {}, r); tip.textContent = `WY ${d.y} · ${d.p}″ · ONI ${d.o>0?'+':''}${d.o} (${PHNAME[d.ph]})`;
+  return {d, r};
+});
+
+/* annotations */
+const gAnno = el('g', {class:'fade'});
+function annotate(y, label, dy){
+  const d = DATA.find(x=>x.y===y); if(!d) return;
+  const x = xYear(y), yTop = yScale(d.p);
+  el('line',{class:'anno-line', x1:x, x2:x, y1:yTop-6, y2:yTop-(dy||26)+14}, gAnno);
+  const t = el('text',{class:'anno', x:x, y:yTop-(dy||26), 'text-anchor':'middle'}, gAnno);
+  t.textContent = label;
+}
+
+/* layout modes */
+function toBars(){
+  marks.forEach(({d,r})=>{
+    r.setAttribute('x', xYear(d.y) - barW/2);
+    r.setAttribute('width', barW);
+    r.setAttribute('y', yScale(d.p));
+    r.setAttribute('height', (M.t+ih) - yScale(d.p));
+    r.setAttribute('rx', 1);
+  });
+  axYear.style.opacity = 1; axOni.classList.remove('show');
+}
+function toScatter(){
+  marks.forEach(({d,r})=>{
+    r.setAttribute('x', xOni(d.o) - 6);
+    r.setAttribute('width', 12);
+    r.setAttribute('y', yScale(d.p) - 6);
+    r.setAttribute('height', 12);
+    r.setAttribute('rx', 6);
+  });
+  axYear.style.opacity = 0; axOni.classList.add('show');
+}
+function colorPhase(on){ marks.forEach(({d,r})=> r.setAttribute('fill', on? PH[d.ph] : GREY)); }
+function dimExcept(years){
+  marks.forEach(({d,r})=> r.setAttribute('opacity', (!years || years.includes(d.y)) ? 1 : .22));
+}
+
+const STEPS = [
+  ()=>{ toBars(); colorPhase(false); dimExcept(null); gAnno.classList.remove('show'); gAnno.innerHTML=''; gFit.classList.remove('show'); gPhase.classList.remove('show'); },
+  ()=>{ toBars(); colorPhase(true); dimExcept(null); gAnno.classList.remove('show'); gAnno.innerHTML=''; gFit.classList.remove('show'); gPhase.classList.remove('show'); },
+  ()=>{ toBars(); colorPhase(true); dimExcept([1983,1998]); gAnno.innerHTML=''; annotate(1983,'1983 · 43.8″'); annotate(1998,'1998 · 41.1″'); gAnno.classList.add('show'); gFit.classList.remove('show'); gPhase.classList.remove('show'); },
+  ()=>{ toBars(); colorPhase(true); dimExcept([2016,2017,2023]); gAnno.innerHTML=''; annotate(2016,'2016 · the no-show', 40); annotate(2017,'2017'); annotate(2023,'2023'); gAnno.classList.add('show'); gFit.classList.remove('show'); gPhase.classList.remove('show'); },
+  ()=>{ toScatter(); colorPhase(true); dimExcept(null); gAnno.classList.remove('show'); gFit.classList.remove('show'); gPhase.classList.remove('show'); },
+  ()=>{ toScatter(); colorPhase(true); dimExcept(null); gAnno.classList.remove('show'); gFit.classList.add('show'); gPhase.classList.remove('show'); },
+  ()=>{ toScatter(); colorPhase(true); dimExcept(null); gAnno.classList.remove('show'); gFit.classList.add('show'); gPhase.classList.add('show'); },
+];
+toBars();
+
+/* scroll driver */
+const steps = [...document.querySelectorAll('.step')];
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      steps.forEach(s=>s.classList.remove('is-active'));
+      e.target.classList.add('is-active');
+      STEPS[+e.target.dataset.step]();
+    }
+  });
+},{threshold:0.55});
+steps.forEach(s=>io.observe(s));
+
+/* ---- deterministic helpers ---- */
+function rnd(seed){ let s = seed % 2147483647; if(s<=0) s+=2147483646;
+  return ()=> (s = s*16807 % 2147483647)/2147483647; }
+function sky(ctx,w,h,stops){
+  const g=ctx.createLinearGradient(0,0,0,h);
+  stops.forEach(s=>g.addColorStop(s[0],s[1]));
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+}
+function ridgeLine(ctx,w,yBase,amp,seed,detail){
+  const r=rnd(seed), p=[r()*6.283,r()*6.283,r()*6.283];
+  ctx.moveTo(0,yBase);
+  for(let x=0;x<=w;x+=5){
+    const u=x/w;
+    ctx.lineTo(x, yBase
+      + Math.sin(u*6.283*detail+p[0])*amp
+      + Math.sin(u*6.283*detail*2.3+p[1])*amp*0.45
+      + Math.sin(u*6.283*detail*5.1+p[2])*amp*0.20);
+  }
+}
+function ridge(ctx,w,h,yBase,amp,color,seed,detail){
+  ctx.beginPath(); ridgeLine(ctx,w,yBase,amp,seed,detail||1.4);
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+  ctx.fillStyle=color; ctx.fill();
+}
+function disc(ctx,x,y,r,color,glow){
+  if(glow){ const g=ctx.createRadialGradient(x,y,r*0.5,x,y,r*9);
+    g.addColorStop(0,glow); g.addColorStop(.30,glow.replace(/[\d.]+\)$/,'0.22)'));
+    g.addColorStop(.62,glow.replace(/[\d.]+\)$/,'0.07)')); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*7,0,6.283); ctx.fill(); }
+  ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,r,0,6.283); ctx.fill();
+}
+function cone(ctx,w,h,cx,baseY,halfW,peakY,body,shade){
+  ctx.beginPath();
+  ctx.moveTo(cx-halfW,baseY);
+  ctx.quadraticCurveTo(cx-halfW*0.40,(baseY+peakY)/2, cx-halfW*0.09, peakY+(baseY-peakY)*0.03);
+  ctx.lineTo(cx,peakY);
+  ctx.lineTo(cx+halfW*0.09, peakY+(baseY-peakY)*0.03);
+  ctx.quadraticCurveTo(cx+halfW*0.40,(baseY+peakY)/2, cx+halfW,baseY);
+  ctx.closePath();
+  ctx.fillStyle=body; ctx.fill();
+  if(shade){ ctx.save(); ctx.clip();
+    ctx.beginPath(); ctx.moveTo(cx,peakY); ctx.lineTo(cx+halfW,baseY); ctx.lineTo(cx+halfW,h); ctx.lineTo(cx,h);
+    ctx.closePath(); ctx.fillStyle=shade; ctx.fill(); ctx.restore(); }
+  return function snowcap(snowY,snowColor,seed){
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx-halfW,baseY);
+    ctx.quadraticCurveTo(cx-halfW*0.40,(baseY+peakY)/2, cx-halfW*0.09, peakY+(baseY-peakY)*0.03);
+    ctx.lineTo(cx,peakY);
+    ctx.lineTo(cx+halfW*0.09, peakY+(baseY-peakY)*0.03);
+    ctx.quadraticCurveTo(cx+halfW*0.40,(baseY+peakY)/2, cx+halfW,baseY);
+    ctx.closePath(); ctx.clip();
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w,0); ctx.lineTo(w,snowY);
+    for(let x=w;x>=0;x-=7){
+      ctx.lineTo(x, snowY + Math.sin(x*0.055+seed)*11 + Math.sin(x*0.15+seed*2)*6 + Math.sin(x*0.31)*3);
+    }
+    ctx.closePath(); ctx.fillStyle=snowColor; ctx.fill();
+    ctx.restore();
+  };
+}
+function conifers(ctx,w,h,yBase,color,count,seed,scale,spread){
+  const r=rnd(seed); ctx.fillStyle=color;
+  for(let i=0;i<count;i++){
+    const x=(spread? r()*w : (i/count)*w + r()*14);
+    const hh=(46+r()*86)*scale, ww=hh*0.34;
+    ctx.beginPath();
+    ctx.moveTo(x, yBase-hh);
+    for(let k=0;k<4;k++){
+      const t=(k+1)/4, yy=yBase-hh+hh*t, half=ww*t*0.5;
+      ctx.lineTo(x+half*0.72, yy-hh*0.06);
+      ctx.lineTo(x+half, yy);
+    }
+    ctx.lineTo(x+ww*0.10, yBase+8); ctx.lineTo(x-ww*0.10, yBase+8);
+    for(let k=3;k>=0;k--){
+      const t=(k+1)/4, yy=yBase-hh+hh*t, half=ww*t*0.5;
+      ctx.lineTo(x-half, yy);
+      ctx.lineTo(x-half*0.72, yy-hh*0.06);
+    }
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.fillRect(0,yBase+4,w,h-yBase);
+}
+function fogBand(ctx,w,y,hh,alpha,color){
+  const g=ctx.createLinearGradient(0,y-hh/2,0,y+hh/2);
+  g.addColorStop(0,'rgba(255,255,255,0)');
+  g.addColorStop(.5,color.replace('ALPHA',alpha));
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,y-hh/2,w,hh);
+}
+function shaft(ctx,w,h,x,topW,botW,alpha,color){
+  const g=ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,color.replace('ALPHA',alpha));
+  g.addColorStop(1,color.replace('ALPHA',0));
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.moveTo(x-topW/2,0); ctx.lineTo(x+topW/2,0);
+  ctx.lineTo(x+botW/2,h); ctx.lineTo(x-botW/2,h); ctx.closePath(); ctx.fill();
+}
+function grain(ctx,w,h,amount,seed){
+  const r=rnd(seed);
+  ctx.save(); ctx.globalAlpha=amount;
+  for(let i=0;i<2600;i++){
+    ctx.fillStyle = r()>0.5 ? '#ffffff' : '#000000';
+    ctx.fillRect(r()*w, r()*h, 1.4, 1.4);
+  }
+  ctx.restore();
+}
+
+/* ================= the five scenes ================= */
+const PAINTERS = {
+
+/* --- 1. Mount Shasta: cold dawn, the snow bank of the Sacramento --- */
+shasta(ctx,w,h){
+  sky(ctx,w,h,[[0,'#9dbcd8'],[.42,'#cddfec'],[.72,'#f2e2c4'],[1,'#f7d9a8']]);
+  disc(ctx,w*0.78,h*0.40,20,'#fdf2d8','rgba(253,228,170,.55)');
+  ridge(ctx,w,h,h*0.60,16,'#93b0c6',31,1.1);
+  const snow1 = cone(ctx,w,h,w*0.38,h*0.86,w*0.40,h*0.16,'#5a7d97','rgba(20,45,70,.30)');
+  snow1(h*0.40,'#f4f9fc',7);
+  const snow2 = cone(ctx,w,h,w*0.60,h*0.87,w*0.17,h*0.44,'#4d6f8a','rgba(20,45,70,.28)');
+  snow2(h*0.55,'#e9f2f8',3);
+  ridge(ctx,w,h,h*0.80,13,'#2f5170',12,1.7);
+  ridge(ctx,w,h,h*0.89,10,'#1d3a52',5,2.4);
+  conifers(ctx,w,h,h*0.95,'#12283c',46,9,1.0,true);
+  grain(ctx,w,h,.05,4);
+},
+
+/* --- 2. Yosemite Valley: granite at golden hour --- */
+yosemite(ctx,w,h){
+  sky(ctx,w,h,[[0,'#b2762f'],[.30,'#dda85e'],[.62,'#f2cf8c'],[1,'#f6e3bb']]);
+  disc(ctx,w*0.455,h*0.545,22,'#fff8e6','rgba(255,206,120,0.55)');
+  ridge(ctx,w,h,h*0.665,9,'#cda87c',21,1.0);
+
+  /* El Capitan: sheer monolith, left */
+  ctx.beginPath();
+  ctx.moveTo(w*0.000,h*0.99); ctx.lineTo(w*0.048,h*0.290);
+  ctx.lineTo(w*0.092,h*0.225); ctx.lineTo(w*0.168,h*0.268);
+  ctx.lineTo(w*0.212,h*0.60); ctx.lineTo(w*0.272,h*0.99);
+  ctx.closePath(); ctx.fillStyle='#c69a63'; ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(w*0.168,h*0.268); ctx.lineTo(w*0.212,h*0.60);
+  ctx.lineTo(w*0.272,h*0.99); ctx.lineTo(w*0.145,h*0.99);
+  ctx.closePath(); ctx.fillStyle='#7d5730'; ctx.fill();
+  ctx.globalAlpha=.10; ctx.fillStyle='#3a2411';
+  for(let i=0;i<4;i++){ ctx.fillRect(w*(0.045+i*0.028), h*0.33, w*0.0035, h*0.64); }
+  ctx.globalAlpha=1;
+
+  /* Half Dome: sheer face left, dome curving off to the right */
+  ctx.beginPath();
+  ctx.moveTo(w*0.605,h*0.97);
+  ctx.lineTo(w*0.605,h*0.315);
+  ctx.bezierCurveTo(w*0.640,h*0.175, w*0.775,h*0.165, w*0.838,h*0.305);
+  ctx.lineTo(w*0.884,h*0.97);
+  ctx.closePath(); ctx.fillStyle='#d3a straightforward'.replace(' straightforward','a86a'); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(w*0.605,h*0.97); ctx.lineTo(w*0.605,h*0.315);
+  ctx.bezierCurveTo(w*0.626,h*0.215, w*0.668,h*0.176, w*0.700,h*0.172);
+  ctx.lineTo(w*0.700,h*0.97);
+  ctx.closePath(); ctx.fillStyle='#6f4a26'; ctx.fill();
+  ctx.globalAlpha=.10; ctx.fillStyle='#2e1c0c';
+  for(let i=0;i<4;i++){ ctx.fillRect(w*(0.622+i*0.017), h*0.36, w*0.0035, h*0.60); }
+  ctx.globalAlpha=1;
+
+  /* shoulder ridge between them */
+  ctx.beginPath();
+  ctx.moveTo(w*0.255,h*0.99); ctx.lineTo(w*0.345,h*0.505);
+  ctx.lineTo(w*0.415,h*0.560); ctx.lineTo(w*0.472,h*0.470);
+  ctx.lineTo(w*0.560,h*0.99);
+  ctx.closePath(); ctx.fillStyle='#a67f4e'; ctx.fill();
+
+  fogBand(ctx,w,h*0.775,h*0.26,.36,'rgba(250,224,178,ALPHA)');
+  ridge(ctx,w,h,h*0.855,8,'#6b5231',17,1.9);
+  conifers(ctx,w,h,h*0.935,'#26301f',54,23,0.95,true);
+  conifers(ctx,w,h,h*1.03,'#141a10',20,44,1.45,true);
+  grain(ctx,w,h,.05,8);
+},
+
+/* --- 3. Lassen Peak: plug dome, steam vents, high snow --- */
+lassen(ctx,w,h){
+  sky(ctx,w,h,[[0,'#7f97bd'],[.42,'#b8c2d8'],[1,'#dfdee4']]);
+  ridge(ctx,w,h,h*0.60,13,'#a5abc0',44,1.2);
+
+  /* rugged asymmetric massif */
+  const massif=()=>{ ctx.beginPath();
+    ctx.moveTo(w*0.06,h*0.86);
+    ctx.lineTo(w*0.20,h*0.63); ctx.lineTo(w*0.28,h*0.68);
+    ctx.lineTo(w*0.375,h*0.41); ctx.lineTo(w*0.435,h*0.47);
+    ctx.lineTo(w*0.505,h*0.235); ctx.lineTo(w*0.560,h*0.285);
+    ctx.lineTo(w*0.605,h*0.245); ctx.lineTo(w*0.665,h*0.42);
+    ctx.lineTo(w*0.725,h*0.385); ctx.lineTo(w*0.815,h*0.62);
+    ctx.lineTo(w*0.88,h*0.585); ctx.lineTo(w*0.97,h*0.86);
+    ctx.closePath(); };
+  massif(); ctx.fillStyle='#585265'; ctx.fill();
+  massif(); ctx.save(); ctx.clip();
+  ctx.beginPath(); ctx.moveTo(w*0.56,h*0.20); ctx.lineTo(w*1.0,h*0.20); ctx.lineTo(w*1.0,h); ctx.lineTo(w*0.56,h);
+  ctx.closePath(); ctx.fillStyle='rgba(26,22,38,.30)'; ctx.fill();
+  /* snow fields */
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(w,0); ctx.lineTo(w,h*0.44);
+  for(let x=w;x>=0;x-=6){
+    ctx.lineTo(x, h*0.44 + Math.sin(x*0.045+2)*h*0.030 + Math.sin(x*0.11)*h*0.017 + Math.sin(x*0.26)*h*0.008);
+  }
+  ctx.closePath(); ctx.fillStyle='#eff2f7'; ctx.fill();
+  ctx.restore();
+
+  /* soft steam from vents */
+  const r=rnd(77);
+  for(let v=0; v<4; v++){
+    const bx=w*(0.28+v*0.15+r()*0.05), by=h*(0.70+r()*0.10);
+    for(let i=0;i<9;i++){
+      const t=i/9, rad=w*(0.015+t*0.048), yy=by-t*h*0.26, xx=bx+Math.sin(t*3.2+v)*w*0.028;
+      const g=ctx.createRadialGradient(xx,yy,0,xx,yy,rad);
+      g.addColorStop(0,`rgba(255,255,255,${0.30*(1-t)+0.06})`);
+      g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(xx,yy,rad,0,6.283); ctx.fill();
+    }
+  }
+
+  ridge(ctx,w,h,h*0.835,10,'#3d3f50',15,2.0);
+  conifers(ctx,w,h,h*0.878,'#1f2735',44,29,0.70,true);
+  /* Manzanita Lake */
+  ctx.fillStyle='#2a3purple'.replace('purple','448'); ctx.fillRect(0,h*0.884,w,h*0.116);
+  ctx.globalAlpha=.20; ctx.fillStyle='#e8eef6';
+  const lr=rnd(5);
+  for(let i=0;i<22;i++){
+    const y=h*(0.895+lr()*0.085), x=lr()*w*0.8;
+    ctx.fillRect(x,y,w*(0.06+lr()*0.20),1.7);
+  }
+  ctx.globalAlpha=1;
+  grain(ctx,w,h,.055,11);
+},
+
+/* --- 4. Sequoia, Giant Forest: columns in warm light --- */
+sequoia(ctx,w,h){
+  sky(ctx,w,h,[[0,'#2c1e12'],[.26,'#5e3f22'],[.60,'#9c6a35'],[.88,'#c08f4c'],[1,'#a97b41']]);
+  shaft(ctx,w,h,w*0.335,w*0.05,w*0.30,.34,'rgba(255,220,152,ALPHA)');
+  shaft(ctx,w,h,w*0.655,w*0.035,w*0.24,.26,'rgba(255,220,152,ALPHA)');
+
+  /* distant trunks, sparse */
+  const far=rnd(61);
+  for(let i=0;i<9;i++){
+    const x=far()*w, tw=w*(0.010+far()*0.014);
+    ctx.fillStyle='rgba(74,44,24,.42)';
+    ctx.fillRect(x, h*0.06, tw, h*0.86);
+  }
+  fogBand(ctx,w,h*0.56,h*0.50,.22,'rgba(255,212,146,ALPHA)');
+
+  /* three hero trunks with clear gaps */
+  [[0.055,0.150,101],[0.435,0.105,113],[0.775,0.175,127]].forEach(t=>{
+    const x=w*t[0], tw=w*t[1];
+    const g=ctx.createLinearGradient(x,0,x+tw,0);
+    g.addColorStop(0,'#2e1408'); g.addColorStop(.36,'#8f4a22');
+    g.addColorStop(.58,'#b2652c'); g.addColorStop(.82,'#5e2c12'); g.addColorStop(1,'#241006');
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.moveTo(x - tw*0.045, h);
+    ctx.lineTo(x + tw*0.035, 0);
+    ctx.lineTo(x + tw*0.965, 0);
+    ctx.lineTo(x + tw*1.045, h);
+    ctx.closePath(); ctx.fill();
+    const br=rnd(t[2]); ctx.globalAlpha=.16;
+    for(let k=0;k<11;k++){
+      ctx.fillStyle = br()>.45 ? '#f2cb92' : '#1d0b04';
+      ctx.fillRect(x + tw*(0.10+br()*0.80), 0, w*0.004, h);
+    }
+    ctx.globalAlpha=1;
+  });
+
+  /* lit forest floor */
+  const fg=ctx.createLinearGradient(0,h*0.86,0,h);
+  fg.addColorStop(0,'#7a4c22'); fg.addColorStop(1,'#2a1a0e');
+  ctx.fillStyle=fg; ctx.fillRect(0,h*0.86,w,h*0.14);
+  fogBand(ctx,w,h*0.87,h*0.14,.30,'rgba(255,204,136,ALPHA)');
+  grain(ctx,w,h,.055,19);
+},
+
+/* --- 5. Muir Woods: redwoods, fog drip, the water no gauge counts --- */
+muir(ctx,w,h){
+  sky(ctx,w,h,[[0,'#6b8073'],[.38,'#8b9c8c'],[1,'#adbcac']]);
+  const depths=[
+    {n:13, c:'rgba(78,94,81,.62)',   wmin:.009, wmax:.019, fog:.20},
+    {n:8,  c:'rgba(45,58,47,.80)',   wmin:.018, wmax:.032, fog:.14},
+    {n:4,  c:'rgba(24,32,26,.93)',   wmin:.034, wmax:.056, fog:.09},
+  ];
+  depths.forEach((d,di)=>{
+    const r=rnd(37+di*17);
+    for(let i=0;i<d.n;i++){
+      const x=r()*w, tw=w*(d.wmin+r()*(d.wmax-d.wmin));
+      ctx.fillStyle=d.c;
+      ctx.beginPath();
+      ctx.moveTo(x-tw*0.14, h*1.0);
+      ctx.lineTo(x+tw*0.12, 0);
+      ctx.lineTo(x+tw*0.86, 0);
+      ctx.lineTo(x+tw*1.14, h*1.0);
+      ctx.closePath(); ctx.fill();
+    }
+    fogBand(ctx,w,h*(0.34+di*0.15),h*0.50,d.fog,'rgba(226,234,226,ALPHA)');
+  });
+
+  /* framing near trunks, cropped both edges */
+  [[-0.03,0.175,'#1c241d','#3f4d40'],[0.90,0.165,'#1a221b','#39463a']].forEach(t=>{
+    const x=w*t[0], tw=w*t[1];
+    const g=ctx.createLinearGradient(x,0,x+tw,0);
+    g.addColorStop(0,t[2]); g.addColorStop(.55,t[3]); g.addColorStop(1,t[2]);
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.moveTo(x-tw*0.10,h); ctx.lineTo(x+tw*0.12,0);
+    ctx.lineTo(x+tw*0.88,0); ctx.lineTo(x+tw*1.10,h); ctx.closePath(); ctx.fill();
+  });
+
+  /* fog drip */
+  const dr=rnd(91); ctx.globalAlpha=.34;
+  for(let i=0;i<46;i++){
+    ctx.fillStyle='#eef4ec';
+    ctx.fillRect(dr()*w, dr()*h*0.82, 1.1, 9+dr()*24);
+  }
+  ctx.globalAlpha=1;
+  fogBand(ctx,w,h*0.80,h*0.36,.22,'rgba(214,226,214,ALPHA)');
+  ctx.fillStyle='#28322a'; ctx.fillRect(0,h*0.952,w,h*0.048);
+  grain(ctx,w,h,.05,27);
+},
+};
+
+
+
+/* ================= PARKS: WebGL noise-morph gallery ================= */
+(function(){
+  const glc = document.getElementById('parkgl');
+  if(!glc) return;
+
+  const PARKS = [
+    { key:'shasta', name:'Mount Shasta',
+      note:'A 14,000-foot volcano that works as a savings account. Snow banked on these flanks melts out through spring and summer into the upper Sacramento — the river that eventually supplies much of the state.',
+      gauge:'MT SHASTA', pin:39.9, elev:1101, span:'1948\u20132026' },
+    { key:'yosemite', name:'Yosemite Valley',
+      note:'Granite carved by ice, watered by snowmelt. The valley\u2019s waterfalls are seasonal instruments: in a strong year they roar into August, and in a weak one Yosemite Falls goes silent by midsummer.',
+      gauge:'YOSEMITE PARK HQ', pin:35.5, elev:1224, span:'1906\u20132026' },
+    { key:'lassen', name:'Lassen Peak',
+      note:'The southern end of the Cascades, still steaming. Snow buries this landscape for much of the year, and the meltwater feeds the volcanic lakes and the Feather River watershed below.',
+      gauge:'MANZANITA LAKE', pin:41.1, elev:1752, span:'1949\u20132025' },
+    { key:'sequoia', name:'Sequoia \u00b7 Giant Forest',
+      note:'Giant sequoias grow wild in about 70 groves, all on this one western slope of the Sierra. They are built on deep snowpack — and the 2012\u20132016 drought killed mature trees that had stood for millennia.',
+      gauge:'LODGEPOLE', pin:41.5, elev:2052, span:'1968\u20132025' },
+    { key:'muir', name:'Muir Woods',
+      note:'Coast redwoods sixteen miles from downtown San Francisco, living on a different budget: winter rain, plus summer fog that condenses in the canopy and drips to the forest floor.',
+      gauge:'MUIR WOODS', pin:36.9, elev:67, span:'1940\u20132026' },
+  ];
+
+  const TW=1200, TH=700;
+  const scenes = PARKS.map(p=>{
+    const c=document.createElement('canvas'); c.width=TW; c.height=TH;
+    PAINTERS[p.key](c.getContext('2d'), TW, TH);
+    return c;
+  });
+
+  /* ---------- shaders (fbm dissolve) ---------- */
+  const VERT=`attribute vec2 a_position;varying vec2 v_uv;
+void main(){v_uv=a_position*0.5+0.5;gl_Position=vec4(a_position,0.0,1.0);}`;
+  const FRAG=`precision highp float;
+uniform sampler2D u_from;uniform sampler2D u_to;uniform float u_progress;
+uniform vec2 u_resolution;uniform float u_fromAspect;uniform float u_toAspect;
+uniform float u_scale;uniform float u_direction;varying vec2 v_uv;
+vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x,289.0);}
+float snoise(vec2 v){const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);
+vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
+vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.0);
+vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
+vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
+m=m*m;m=m*m;vec3 x=2.0*fract(p*C.www)-1.0;vec3 h=abs(x)-0.5;
+vec3 ox=floor(x+0.5);vec3 a0=x-ox;m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
+vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;return 130.0*dot(m,g);}
+float fbm(vec2 v){float val=0.0;float amp=0.5;
+for(int i=0;i<5;i++){val+=amp*snoise(v);v*=2.0;amp*=0.5;}return val;}
+vec2 coverUV(vec2 uv,float imgAspect){float ca=u_resolution.x/u_resolution.y;
+vec2 s=(ca>imgAspect)?vec2(1.0,imgAspect/ca):vec2(ca/imgAspect,1.0);return (uv-0.5)*s+0.5;}
+void main(){float edge=0.15;
+float ap=u_progress*(1.0+2.0*edge)-edge;
+float noise=fbm(v_uv*u_scale+vec2(0,u_progress*u_direction))*.5+.5;
+noise=smoothstep(0.,2.,length(texture2D(u_to,coverUV(v_uv,u_fromAspect)).rgb)+noise);
+float mixF=1.0-smoothstep(ap-edge,ap+edge,noise);
+float din=noise*u_progress;float dout=noise*(1.0-u_progress);
+vec2 fUV=coverUV(v_uv+vec2(0,din*0.5*u_direction),u_fromAspect);
+vec2 tUV=coverUV(v_uv+vec2(0,dout*-0.25*u_direction),u_toAspect);
+gl_FragColor=mix(texture2D(u_from,fUV),texture2D(u_to,tUV),mixF);}`;
+
+  function shader(gl,type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s;}
+  function tex(gl,canvas){
+    const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,canvas);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    return t;}
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let gl=null, U=null, textures=[], from=0, to=0, prog=1, tStart=null, DUR=reduce?1:1400, dir=1, raf=null;
+
+  try{
+    gl = glc.getContext('webgl') || glc.getContext('experimental-webgl');
+  }catch(e){ gl=null; }
+
+  if(gl){
+   try{
+    const p=gl.createProgram();
+    gl.attachShader(p,shader(gl,gl.VERTEX_SHADER,VERT));
+    gl.attachShader(p,shader(gl,gl.FRAGMENT_SHADER,FRAG));
+    gl.linkProgram(p);
+    if(!gl.getProgramParameter(p,gl.LINK_STATUS)){ gl=null; }
+    else{
+      gl.useProgram(p);
+      const buf=gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+      const loc=gl.getAttribLocation(p,'a_position');
+      gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+      U={from:gl.getUniformLocation(p,'u_from'), to:gl.getUniformLocation(p,'u_to'),
+         progress:gl.getUniformLocation(p,'u_progress'), resolution:gl.getUniformLocation(p,'u_resolution'),
+         fromAspect:gl.getUniformLocation(p,'u_fromAspect'), toAspect:gl.getUniformLocation(p,'u_toAspect'),
+         scale:gl.getUniformLocation(p,'u_scale'), direction:gl.getUniformLocation(p,'u_direction')};
+      textures = scenes.map(c=>tex(gl,c));
+    }
+   }catch(err){ gl=null; }
+  }
+  const ctx2d = gl ? null : glc.getContext('2d');
+
+  function resize(){
+    const dpr=Math.min(devicePixelRatio||1,2);
+    const w=Math.round(glc.clientWidth*dpr), h=Math.round(glc.clientHeight*dpr);
+    if(!w||!h) return;
+    if(glc.width!==w||glc.height!==h){ glc.width=w; glc.height=h; if(gl) gl.viewport(0,0,w,h); }
+  }
+  addEventListener('resize', ()=>{ resize(); if(gl){ render(); } else { paint2d(); } });
+
+  function paint2d(){
+    resize();
+    const c=scenes[to], W=glc.width, H=glc.height;
+    const ca=W/H, ia=TW/TH;
+    let sw=TW, sh=TH, sx=0, sy=0;
+    if(ca>ia){ sh=TW/ca; sy=(TH-sh)/2; } else { sw=TH*ca; sx=(TW-sw)/2; }
+    ctx2d.drawImage(c, sx,sy,sw,sh, 0,0,W,H);
+  }
+
+  function render(){
+    if(!gl) return;
+    resize();
+    if(tStart!==null && prog<1){
+      const t=Math.min((performance.now()-tStart)/DUR,1);
+      prog = t<0.5 ? 16*Math.pow(t,5) : 1-Math.pow(-2*t+2,5)/2;
+    }
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,textures[from]); gl.uniform1i(U.from,0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,textures[to]);   gl.uniform1i(U.to,1);
+    gl.uniform1f(U.progress,prog);
+    gl.uniform2f(U.resolution,glc.width,glc.height);
+    gl.uniform1f(U.fromAspect,TW/TH); gl.uniform1f(U.toAspect,TW/TH);
+    gl.uniform1f(U.scale,3.5); gl.uniform1f(U.direction,dir);
+    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  }
+  function loop(){
+    render();
+    if(prog < 1){ raf=requestAnimationFrame(loop); }
+    else { raf=null; } /* idle costs zero: last frame stays on the canvas */
+  }
+  function kick(){ if(raf===null){ raf=requestAnimationFrame(loop); } }
+
+  /* ---------- UI ---------- */
+  const kicker=document.getElementById('pk-kicker'), nameEl=document.getElementById('pk-name'),
+        noteEl=document.getElementById('pk-note'), gaugeEl=document.getElementById('pk-gauge'),
+        thumbs=document.getElementById('pk-thumbs');
+  let index=0;
+
+  PARKS.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='pk-thumb'; b.type='button';
+    b.setAttribute('aria-label', p.name);
+    b.setAttribute('aria-current', i===0 ? 'true':'false');
+    const tc=document.createElement('canvas'); tc.width=200; tc.height=117;
+    PAINTERS[p.key](tc.getContext('2d'),200,117);
+    b.appendChild(tc);
+    b.addEventListener('click', ()=> go(i));
+    thumbs.appendChild(b);
+  });
+
+  function caption(i){
+    const p=PARKS[i];
+    kicker.textContent = String(i+1).padStart(2,'0')+' / 0'+PARKS.length;
+    nameEl.textContent = p.name;
+    noteEl.textContent = p.note;
+    gaugeEl.innerHTML = `NEAREST GAUGE &middot; ${p.gauge} &nbsp; <b>${p.pin}&Prime;/yr</b> &nbsp; ${p.elev}\u2009m &middot; RECORD ${p.span}`;
+    [...thumbs.children].forEach((b,k)=> b.setAttribute('aria-current', k===i?'true':'false'));
+  }
+  function go(i){
+    if(i===index) return;
+    dir = i>index ? 1 : -1;
+    from = index; to = i; prog = 0; tStart = performance.now();
+    index = i;
+    caption(i);
+    if(gl){ kick(); } else { paint2d(); }
+  }
+  document.getElementById('pk-prev').addEventListener('click', ()=> go((index-1+PARKS.length)%PARKS.length));
+  document.getElementById('pk-next').addEventListener('click', ()=> go((index+1)%PARKS.length));
+  glc.closest('.parks-stage').addEventListener('keydown', e=>{
+    if(e.key==='ArrowLeft'){ go((index-1+PARKS.length)%PARKS.length); }
+    if(e.key==='ArrowRight'){ go((index+1)%PARKS.length); }
+  });
+
+  caption(0);
+  resize();
+  if(gl){ render(); } else { paint2d(); }
+})();
+
+/* pause the CSS rain when its section is off-screen */
+(function(){
+  const band = document.querySelector('.band');
+  if(!band) return;
+  new IntersectionObserver(es=>{
+    es.forEach(e=> band.classList.toggle('offstage', !e.isIntersecting));
+  }, {threshold: 0.02}).observe(band);
+})();
+
+/* ================= STATION MAP ================= */
+(function(){
+  const ST = [{"n":"Adin Rs","la":41.193,"lo":-120.944,"p":15.3,"y1":1894,"y2":2026,"e":1280},{"n":"Alpine","la":32.836,"lo":-116.778,"p":15.2,"y1":1952,"y2":2026,"e":516},{"n":"Altadena","la":34.182,"lo":-118.138,"p":20.9,"y1":1922,"y2":2026,"e":343},{"n":"Angwin Pacific Union College","la":38.573,"lo":-122.441,"p":39.5,"y1":1940,"y2":2026,"e":522},{"n":"Ash Mtn","la":36.491,"lo":-118.825,"p":25.4,"y1":1927,"y2":2026,"e":520},{"n":"Auburn","la":38.907,"lo":-121.084,"p":35.1,"y1":1905,"y2":2026,"e":393},{"n":"Barstow","la":34.893,"lo":-117.022,"p":4.9,"y1":1980,"y2":2026,"e":676},{"n":"Ben Lomond #4","la":37.087,"lo":-122.082,"p":48.0,"y1":1972,"y2":2026,"e":132},{"n":"Big Bear Lake","la":34.243,"lo":-116.917,"p":20.5,"y1":1960,"y2":2026,"e":2058},{"n":"Big Sur Stn","la":36.247,"lo":-121.78,"p":39.0,"y1":1915,"y2":2026,"e":61},{"n":"Big Tujunga Dam Fc46","la":34.295,"lo":-118.189,"p":25.1,"y1":1932,"y2":2026,"e":709},{"n":"Aspendell","la":37.232,"lo":-118.599,"p":14.3,"y1":1910,"y2":2026,"e":2581},{"n":"Blythe","la":33.614,"lo":-114.598,"p":3.5,"y1":1913,"y2":2026,"e":81},{"n":"Boca","la":39.389,"lo":-120.094,"p":22.5,"y1":1906,"y2":2026,"e":1699},{"n":"Bodie California St Historic P","la":38.212,"lo":-119.014,"p":12.8,"y1":1895,"y2":2026,"e":2551},{"n":"Borrego Desert Park","la":33.256,"lo":-116.404,"p":5.4,"y1":1942,"y2":2026,"e":246},{"n":"Bowman Dam","la":39.454,"lo":-120.656,"p":61.3,"y1":1896,"y2":2026,"e":1641},{"n":"Bridgeport","la":38.258,"lo":-119.229,"p":9.2,"y1":1903,"y2":2025,"e":1972},{"n":"Bucks Creek","la":39.937,"lo":-121.315,"p":64.4,"y1":1959,"y2":2026,"e":576},{"n":"Burbank Valley Pump Plt","la":34.187,"lo":-118.348,"p":15.6,"y1":1939,"y2":2026,"e":199},{"n":"Buttonwillow","la":35.403,"lo":-119.47,"p":5.4,"y1":1940,"y2":2026,"e":68},{"n":"Cachuma Lake","la":34.582,"lo":-119.982,"p":19.3,"y1":1952,"y2":2026,"e":240},{"n":"Calaveras Big Trees","la":38.277,"lo":-120.311,"p":52.3,"y1":1929,"y2":2026,"e":1431},{"n":"Calistoga","la":38.577,"lo":-122.578,"p":34.5,"y1":1906,"y2":2026,"e":106},{"n":"Campo","la":32.626,"lo":-116.47,"p":14.9,"y1":1948,"y2":2026,"e":801},{"n":"Camp Pardee","la":38.249,"lo":-120.843,"p":21.6,"y1":1926,"y2":2026,"e":200},{"n":"Cedarville","la":41.53,"lo":-120.179,"p":12.7,"y1":1894,"y2":2026,"e":1428},{"n":"Cherry Valley Dam","la":37.975,"lo":-119.916,"p":45.0,"y1":1955,"y2":2026,"e":1452},{"n":"Chester","la":40.302,"lo":-121.244,"p":31.5,"y1":1910,"y2":2025,"e":1387},{"n":"Chico Univ Farm","la":39.691,"lo":-121.821,"p":24.6,"y1":1906,"y2":2026,"e":56},{"n":"Chula Vista","la":32.64,"lo":-117.086,"p":9.4,"y1":1918,"y2":2026,"e":17},{"n":"Clearlake 4 Se","la":38.924,"lo":-122.567,"p":27.1,"y1":1954,"y2":2026,"e":411},{"n":"Cloverdale","la":38.793,"lo":-123.026,"p":42.7,"y1":1950,"y2":2026,"e":121},{"n":"Coalinga","la":36.136,"lo":-120.361,"p":7.3,"y1":1942,"y2":2026,"e":204},{"n":"Coleman Fisheries Stn","la":40.4,"lo":-122.143,"p":27.0,"y1":1943,"y2":2026,"e":128},{"n":"Colfax","la":39.09,"lo":-120.947,"p":43.8,"y1":1905,"y2":2026,"e":723},{"n":"Colgate Powerhouse","la":39.331,"lo":-121.192,"p":39.1,"y1":1906,"y2":2025,"e":181},{"n":"Colusa 2 Ssw","la":39.188,"lo":-122.027,"p":14.9,"y1":1948,"y2":2026,"e":15},{"n":"Corcoran Irrig Dist","la":36.097,"lo":-119.582,"p":7.0,"y1":1948,"y2":2026,"e":61},{"n":"Covina City Yard Fc387B","la":34.092,"lo":-117.88,"p":16.1,"y1":1929,"y2":2026,"e":185},{"n":"Culver City","la":34.005,"lo":-118.414,"p":12.8,"y1":1935,"y2":2026,"e":28},{"n":"Cuyamaca","la":32.99,"lo":-116.587,"p":31.6,"y1":1899,"y2":2026,"e":1414},{"n":"Davis 2 Wsw Exp Farm","la":38.535,"lo":-121.776,"p":17.3,"y1":1893,"y2":2026,"e":18},{"n":"Death Valley Np","la":36.462,"lo":-116.867,"p":2.2,"y1":1961,"y2":2026,"e":-59},{"n":"Deep Canyon Lab","la":33.651,"lo":-116.376,"p":5.4,"y1":1963,"y2":2026,"e":365},{"n":"Delano","la":35.768,"lo":-119.26,"p":6.9,"y1":1906,"y2":2026,"e":92},{"n":"De Sabla","la":39.872,"lo":-121.611,"p":61.6,"y1":1906,"y2":2025,"e":826},{"n":"Downieville","la":39.563,"lo":-120.824,"p":59.5,"y1":1908,"y2":2026,"e":888},{"n":"Dunsmuir Trtmt Pl","la":41.183,"lo":-122.282,"p":59.1,"y1":1978,"y2":2026,"e":661},{"n":"Eagle Mtn","la":33.808,"lo":-115.451,"p":3.5,"y1":1933,"y2":2026,"e":296},{"n":"El Cajon","la":32.801,"lo":-116.928,"p":11.4,"y1":1979,"y2":2026,"e":150},{"n":"El Capitan Dam","la":32.886,"lo":-116.815,"p":15.2,"y1":1948,"y2":2026,"e":182},{"n":"El Centro 2 Ssw","la":32.767,"lo":-115.566,"p":2.5,"y1":1932,"y2":2026,"e":-9},{"n":"Elsinore","la":33.686,"lo":-117.346,"p":11.4,"y1":1897,"y2":2026,"e":386},{"n":"Escondido #2","la":33.121,"lo":-117.09,"p":14.4,"y1":1979,"y2":2026,"e":182},{"n":"Exchequer Dam","la":37.353,"lo":-120.162,"p":19.2,"y1":1950,"y2":2026,"e":128},{"n":"Fairfield","la":38.274,"lo":-122.068,"p":22.7,"y1":1950,"y2":2026,"e":12},{"n":"Fairmont","la":34.705,"lo":-118.43,"p":14.9,"y1":1909,"y2":2026,"e":932},{"n":"Fall Rvr Mills","la":41.008,"lo":-121.435,"p":17.8,"y1":1923,"y2":2025,"e":1005},{"n":"Fiddletown Dexter Rch","la":38.525,"lo":-120.698,"p":36.1,"y1":1938,"y2":2026,"e":661},{"n":"Five Points 5 Ssw","la":36.364,"lo":-120.156,"p":5.7,"y1":1942,"y2":2026,"e":86},{"n":"Foresthill Rs","la":39.01,"lo":-120.846,"p":47.8,"y1":1937,"y2":2025,"e":919},{"n":"Ft Bidwell","la":41.871,"lo":-120.157,"p":16.4,"y1":1867,"y2":2026,"e":1444},{"n":"Ft Bragg 5 N","la":39.51,"lo":-123.756,"p":39.1,"y1":1895,"y2":2026,"e":37},{"n":"Ft Jones Rs","la":41.601,"lo":-122.848,"p":21.0,"y1":1936,"y2":2026,"e":831},{"n":"Ft Ross","la":38.515,"lo":-123.245,"p":40.2,"y1":1895,"y2":2026,"e":34},{"n":"Friant Government Camp","la":36.996,"lo":-119.707,"p":13.9,"y1":1912,"y2":2026,"e":131},{"n":"Gasquet Rs","la":41.846,"lo":-123.967,"p":89.6,"y1":1948,"y2":2026,"e":118},{"n":"Gibraltar Dam #2","la":34.523,"lo":-119.682,"p":25.5,"y1":1958,"y2":2026,"e":474},{"n":"Glennville","la":35.727,"lo":-118.701,"p":18.4,"y1":1951,"y2":2026,"e":957},{"n":"Gold Run 4 Sw","la":39.15,"lo":-120.9,"p":54.1,"y1":1905,"y2":2026,"e":981},{"n":"Grant Grove","la":36.737,"lo":-118.962,"p":40.9,"y1":1940,"y2":2026,"e":2005},{"n":"Grass Valley #2","la":39.204,"lo":-121.068,"p":52.1,"y1":1966,"y2":2026,"e":731},{"n":"Graton","la":38.431,"lo":-122.865,"p":40.2,"y1":1926,"y2":2026,"e":61},{"n":"Groveland 2","la":37.844,"lo":-120.226,"p":35.9,"y1":1948,"y2":2025,"e":853},{"n":"Half Moon Bay","la":37.472,"lo":-122.443,"p":24.2,"y1":1939,"y2":2026,"e":8},{"n":"Hanford 1 S","la":36.316,"lo":-119.637,"p":8.1,"y1":1899,"y2":2026,"e":72},{"n":"Happy Camp Rs","la":41.796,"lo":-123.375,"p":50.6,"y1":1914,"y2":2026,"e":348},{"n":"Harry L Englebright Dam","la":39.237,"lo":-121.267,"p":33.7,"y1":1955,"y2":2026,"e":243},{"n":"Hat Creek","la":40.932,"lo":-121.543,"p":18.3,"y1":1921,"y2":2025,"e":919},{"n":"Hayfield Pumping Plt","la":33.704,"lo":-115.629,"p":4.1,"y1":1933,"y2":2026,"e":417},{"n":"Healdsburg","la":38.629,"lo":-122.866,"p":40.6,"y1":1893,"y2":2026,"e":53},{"n":"Hemet","la":33.738,"lo":-116.894,"p":10.8,"y1":1917,"y2":2026,"e":552},{"n":"Henshaw Dam","la":33.237,"lo":-116.761,"p":24.1,"y1":1942,"y2":2026,"e":823},{"n":"Hetch Hetchy","la":37.961,"lo":-119.783,"p":34.7,"y1":1910,"y2":2026,"e":1179},{"n":"Hollister 2","la":36.848,"lo":-121.421,"p":13.0,"y1":1948,"y2":2026,"e":83},{"n":"Idyllwild Fire Dept","la":33.757,"lo":-116.707,"p":23.6,"y1":1943,"y2":2026,"e":1639},{"n":"Imperial","la":32.849,"lo":-115.567,"p":2.7,"y1":1901,"y2":2026,"e":-19},{"n":"Indio Fire Stn","la":33.709,"lo":-116.215,"p":3.0,"y1":1894,"y2":2026,"e":-6},{"n":"Iron Mtn","la":34.147,"lo":-115.122,"p":3.4,"y1":1935,"y2":2026,"e":281},{"n":"Jess Valley","la":41.271,"lo":-120.298,"p":17.9,"y1":1948,"y2":2026,"e":1621},{"n":"Joshua Tree","la":34.147,"lo":-116.275,"p":4.4,"y1":1959,"y2":2026,"e":781},{"n":"Julian Cdf","la":33.076,"lo":-116.593,"p":26.6,"y1":1893,"y2":2026,"e":1284},{"n":"Juncal Dam","la":34.491,"lo":-119.507,"p":27.0,"y1":1941,"y2":2026,"e":688},{"n":"Kelsey 1 N","la":38.809,"lo":-120.821,"p":35.1,"y1":1972,"y2":2026,"e":609},{"n":"Kentfield","la":37.957,"lo":-122.545,"p":45.6,"y1":1902,"y2":2026,"e":44},{"n":"Kettleman City","la":36.007,"lo":-119.96,"p":6.4,"y1":1955,"y2":2026,"e":73},{"n":"King City","la":36.207,"lo":-121.138,"p":11.0,"y1":1902,"y2":2026,"e":97},{"n":"Lakeside 2 E","la":32.854,"lo":-116.895,"p":15.0,"y1":1967,"y2":2026,"e":210},{"n":"Lake Solano","la":38.492,"lo":-122.004,"p":24.3,"y1":1975,"y2":2026,"e":57},{"n":"Lava Beds Nat Mon","la":41.712,"lo":-121.507,"p":13.7,"y1":1959,"y2":2026,"e":1455},{"n":"Lemon Cove","la":36.382,"lo":-119.026,"p":13.7,"y1":1899,"y2":2026,"e":156},{"n":"Lindsay","la":36.203,"lo":-119.055,"p":11.4,"y1":1913,"y2":2026,"e":132},{"n":"Livermore","la":37.682,"lo":-121.751,"p":14.1,"y1":1903,"y2":2026,"e":161},{"n":"Lodgepole","la":36.604,"lo":-118.733,"p":41.5,"y1":1968,"y2":2025,"e":2052},{"n":"Lompoc","la":34.654,"lo":-120.451,"p":14.2,"y1":1917,"y2":2026,"e":22},{"n":"Los Banos","la":37.056,"lo":-120.867,"p":8.7,"y1":1906,"y2":2026,"e":36},{"n":"Los Banos Arburua Rch","la":36.875,"lo":-120.939,"p":8.6,"y1":1932,"y2":2026,"e":256},{"n":"Manzanita Lake","la":40.541,"lo":-121.577,"p":41.1,"y1":1949,"y2":2025,"e":1752},{"n":"Markley Cove","la":38.492,"lo":-122.124,"p":27.1,"y1":1970,"y2":2026,"e":146},{"n":"Mccloud","la":41.252,"lo":-122.138,"p":47.7,"y1":1909,"y2":2026,"e":985},{"n":"Mecca Fire Stn","la":33.57,"lo":-116.073,"p":2.7,"y1":1905,"y2":2026,"e":-55},{"n":"Merced","la":37.289,"lo":-120.516,"p":12.1,"y1":1899,"y2":2026,"e":46},{"n":"Middletown","la":38.748,"lo":-122.626,"p":37.4,"y1":1893,"y2":2026,"e":341},{"n":"Mineral","la":40.346,"lo":-121.609,"p":52.6,"y1":1909,"y2":2026,"e":1485},{"n":"Monterey","la":36.593,"lo":-121.856,"p":19.2,"y1":1906,"y2":2026,"e":37},{"n":"Morro Bay Fire Dept","la":35.367,"lo":-120.845,"p":15.4,"y1":1959,"y2":2026,"e":36},{"n":"Mt Diablo Junction","la":37.879,"lo":-121.93,"p":24.1,"y1":1952,"y2":2026,"e":661},{"n":"Mt Hamilton","la":37.343,"lo":-121.635,"p":23.7,"y1":1948,"y2":2026,"e":1286},{"n":"Mt Hebron Rs","la":41.783,"lo":-122.045,"p":10.4,"y1":1907,"y2":2024,"e":1300},{"n":"Mt Shasta","la":41.322,"lo":-122.317,"p":39.9,"y1":1948,"y2":2026,"e":1101},{"n":"Mt Wilson Cbs","la":34.231,"lo":-118.071,"p":31.9,"y1":1948,"y2":2026,"e":1740},{"n":"Muir Woods","la":37.898,"lo":-122.569,"p":36.9,"y1":1940,"y2":2026,"e":67},{"n":"Napa State Hospital","la":38.278,"lo":-122.265,"p":24.2,"y1":1893,"y2":2026,"e":10},{"n":"Nevada City","la":39.247,"lo":-121.001,"p":54.4,"y1":1893,"y2":2026,"e":847},{"n":"New Cuyama Fire Stn","la":34.946,"lo":-119.683,"p":7.3,"y1":1974,"y2":2026,"e":658},{"n":"Newman","la":37.281,"lo":-121.018,"p":10.5,"y1":1902,"y2":2026,"e":27},{"n":"Newport Beach Harbor","la":33.603,"lo":-117.884,"p":10.3,"y1":1921,"y2":2026,"e":3},{"n":"Nicolaus #2","la":38.926,"lo":-121.545,"p":18.4,"y1":1962,"y2":2026,"e":13},{"n":"Niland","la":33.278,"lo":-115.524,"p":2.5,"y1":1914,"y2":2026,"e":-18},{"n":"N Fk Rs","la":37.233,"lo":-119.51,"p":30.2,"y1":1904,"y2":2026,"e":806},{"n":"Oak Knoll W C","la":41.839,"lo":-122.85,"p":22.1,"y1":1943,"y2":2025,"e":603},{"n":"Oakland Museum","la":37.798,"lo":-122.264,"p":21.2,"y1":1970,"y2":2026,"e":9},{"n":"Oceanside Marina","la":33.21,"lo":-117.395,"p":10.2,"y1":1909,"y2":2026,"e":3},{"n":"Ojai","la":34.448,"lo":-119.228,"p":20.5,"y1":1905,"y2":2026,"e":227},{"n":"Orland","la":39.746,"lo":-122.2,"p":19.6,"y1":1903,"y2":2026,"e":77},{"n":"Orleans","la":41.302,"lo":-123.539,"p":50.4,"y1":1903,"y2":2026,"e":122},{"n":"Oroville","la":39.518,"lo":-121.553,"p":26.7,"y1":1953,"y2":2026,"e":52},{"n":"Pacoima Dam Fc33A-E","la":34.329,"lo":-118.401,"p":18.0,"y1":1943,"y2":2026,"e":472},{"n":"Palmdale","la":34.588,"lo":-118.094,"p":7.1,"y1":1903,"y2":2026,"e":796},{"n":"Palm Springs","la":33.828,"lo":-116.51,"p":5.1,"y1":1906,"y2":2026,"e":129},{"n":"Palomar Mtn Obsy","la":33.378,"lo":-116.84,"p":27.2,"y1":1901,"y2":2026,"e":1691},{"n":"Palos Verdes Es Fc43D","la":33.8,"lo":-118.391,"p":10.9,"y1":1949,"y2":2026,"e":67},{"n":"Panoche 2 W","la":36.607,"lo":-120.884,"p":9.3,"y1":1949,"y2":2026,"e":426},{"n":"Parker Rsvr","la":34.29,"lo":-114.171,"p":5.6,"y1":1934,"y2":2026,"e":224},{"n":"Pasadena","la":34.148,"lo":-118.145,"p":19.8,"y1":1893,"y2":2026,"e":263},{"n":"Paso Robles","la":35.628,"lo":-120.686,"p":14.8,"y1":1894,"y2":2026,"e":222},{"n":"Petaluma Ap","la":38.258,"lo":-122.608,"p":24.5,"y1":1893,"y2":2026,"e":6},{"n":"Pinnacles Np","la":36.482,"lo":-121.182,"p":15.6,"y1":1937,"y2":2026,"e":398},{"n":"Piru 2 Ese","la":34.406,"lo":-118.757,"p":16.8,"y1":1959,"y2":2026,"e":217},{"n":"Pit Rvr Ph 5","la":40.987,"lo":-121.977,"p":75.0,"y1":1945,"y2":2026,"e":444},{"n":"Portola","la":39.805,"lo":-120.472,"p":20.0,"y1":1915,"y2":2026,"e":1478},{"n":"Potter Valley Powerhouse","la":39.362,"lo":-123.129,"p":43.0,"y1":1937,"y2":2026,"e":310},{"n":"Poway Valley","la":33.019,"lo":-117.031,"p":12.7,"y1":1893,"y2":2026,"e":197},{"n":"Quincy","la":39.937,"lo":-120.948,"p":41.3,"y1":1895,"y2":2026,"e":1042},{"n":"Randsburg","la":35.369,"lo":-117.653,"p":6.1,"y1":1937,"y2":2024,"e":1088},{"n":"Redlands","la":34.037,"lo":-117.195,"p":12.8,"y1":1898,"y2":2026,"e":429},{"n":"Redwood City","la":37.477,"lo":-122.239,"p":18.4,"y1":1906,"y2":2026,"e":9},{"n":"Richmond","la":37.919,"lo":-122.377,"p":22.7,"y1":1950,"y2":2026,"e":6},{"n":"Riverside Fire Stn 3","la":33.951,"lo":-117.388,"p":9.7,"y1":1893,"y2":2026,"e":256},{"n":"Salinas Dam","la":35.337,"lo":-120.504,"p":21.2,"y1":1948,"y2":2026,"e":424},{"n":"Salsipuedes Gaging Stn","la":34.585,"lo":-120.408,"p":17.6,"y1":1948,"y2":2026,"e":77},{"n":"San Andreas 2","la":38.191,"lo":-120.671,"p":21.0,"y1":1948,"y2":2026,"e":335},{"n":"San Francisco Oceanside","la":37.728,"lo":-122.505,"p":18.5,"y1":1948,"y2":2026,"e":2},{"n":"San Gabriel Canyon Ph","la":34.155,"lo":-117.908,"p":21.5,"y1":1917,"y2":2026,"e":226},{"n":"San Gabriel Dam Fc425B-E","la":34.205,"lo":-117.861,"p":27.0,"y1":1948,"y2":2026,"e":451},{"n":"San Gabriel Fire Dept","la":34.084,"lo":-118.1,"p":16.8,"y1":1939,"y2":2026,"e":110},{"n":"San Jacinto","la":33.796,"lo":-116.975,"p":11.0,"y1":1948,"y2":2026,"e":464},{"n":"San Jose","la":37.359,"lo":-121.924,"p":14.2,"y1":1893,"y2":2026,"e":14},{"n":"San Luis Obispo Poly","la":35.306,"lo":-120.662,"p":21.5,"y1":1893,"y2":2026,"e":93},{"n":"San Rafael-Civic Ctr","la":37.998,"lo":-122.537,"p":33.6,"y1":1894,"y2":2026,"e":36},{"n":"Santa Ana Fire Stn","la":33.744,"lo":-117.867,"p":13.0,"y1":1906,"y2":2026,"e":41},{"n":"Santa Barbara","la":34.417,"lo":-119.684,"p":17.0,"y1":1893,"y2":2026,"e":4},{"n":"Santa Margarita Boost","la":35.374,"lo":-120.638,"p":30.6,"y1":1942,"y2":2026,"e":349},{"n":"Santa Rosa","la":38.456,"lo":-122.713,"p":29.9,"y1":1902,"y2":2026,"e":50},{"n":"Saugus Pwr Plt 1","la":34.59,"lo":-118.454,"p":17.2,"y1":1918,"y2":2026,"e":658},{"n":"Scotia","la":40.483,"lo":-124.104,"p":47.4,"y1":1926,"y2":2026,"e":41},{"n":"Shasta Dam","la":40.714,"lo":-122.416,"p":60.7,"y1":1943,"y2":2026,"e":327},{"n":"Sierraville Rs","la":39.583,"lo":-120.371,"p":24.6,"y1":1909,"y2":2026,"e":1516},{"n":"Sonoma","la":38.299,"lo":-122.462,"p":27.6,"y1":1893,"y2":2026,"e":29},{"n":"Sonora","la":37.967,"lo":-120.387,"p":28.8,"y1":1903,"y2":2026,"e":510},{"n":"So Entrance Yosemite Np","la":37.512,"lo":-119.633,"p":38.9,"y1":1941,"y2":2026,"e":1538},{"n":"Stony Gorge Rsvr","la":39.586,"lo":-122.534,"p":19.8,"y1":1926,"y2":2026,"e":243},{"n":"Strawberry Valley 2","la":39.532,"lo":-121.161,"p":80.1,"y1":1948,"y2":2026,"e":1130},{"n":"Susanville 2Sw","la":40.417,"lo":-120.663,"p":14.9,"y1":1893,"y2":2026,"e":1283},{"n":"Sutter Hill Cdf","la":38.377,"lo":-120.801,"p":26.6,"y1":1943,"y2":2026,"e":483},{"n":"Tahoe City","la":39.168,"lo":-120.143,"p":31.3,"y1":1903,"y2":2026,"e":1898},{"n":"Tejon Rancho","la":35.023,"lo":-118.75,"p":10.9,"y1":1895,"y2":2026,"e":434},{"n":"Three Rivers Edison Ph 1","la":36.465,"lo":-118.862,"p":22.8,"y1":1948,"y2":2024,"e":347},{"n":"Tracy Carbona","la":37.682,"lo":-121.347,"p":9.4,"y1":1906,"y2":2026,"e":41},{"n":"Tracy Pumping Plt","la":37.796,"lo":-121.583,"p":12.0,"y1":1955,"y2":2026,"e":18},{"n":"Trinity Rvr Hatchery","la":40.726,"lo":-122.795,"p":31.4,"y1":1974,"y2":2026,"e":567},{"n":"Trona","la":35.764,"lo":-117.391,"p":3.9,"y1":1920,"y2":2026,"e":516},{"n":"Tulelake","la":41.96,"lo":-121.474,"p":10.6,"y1":1932,"y2":2026,"e":1230},{"n":"Turlock #2","la":37.502,"lo":-120.846,"p":11.8,"y1":1893,"y2":2026,"e":31},{"n":"Twentynine Palms","la":34.128,"lo":-116.037,"p":4.0,"y1":1935,"y2":2026,"e":602},{"n":"Twitchell Dam","la":34.988,"lo":-120.321,"p":15.9,"y1":1962,"y2":2026,"e":177},{"n":"U C L A","la":34.07,"lo":-118.443,"p":16.7,"y1":1933,"y2":2026,"e":131},{"n":"Upper San Leandro Filters","la":37.772,"lo":-122.168,"p":24.7,"y1":1948,"y2":2026,"e":120},{"n":"Victorville","la":34.525,"lo":-117.296,"p":5.3,"y1":1917,"y2":2026,"e":850},{"n":"Visalia","la":36.328,"lo":-119.3,"p":9.9,"y1":1895,"y2":2026,"e":92},{"n":"Vista","la":33.235,"lo":-117.232,"p":13.0,"y1":1957,"y2":2026,"e":131},{"n":"Volta Ph","la":40.458,"lo":-121.866,"p":33.1,"y1":1926,"y2":2026,"e":676},{"n":"Wasco","la":35.589,"lo":-119.352,"p":6.3,"y1":1901,"y2":2026,"e":88},{"n":"Watsonville Wtr Wks","la":36.931,"lo":-121.769,"p":21.1,"y1":1908,"y2":2026,"e":29},{"n":"W Pt","la":38.377,"lo":-120.545,"p":35.8,"y1":1894,"y2":2026,"e":845},{"n":"Whiskeytown Rsvr","la":40.612,"lo":-122.528,"p":60.8,"y1":1960,"y2":2026,"e":394},{"n":"Willows 6 W","la":39.523,"lo":-122.305,"p":17.0,"y1":1906,"y2":2026,"e":71},{"n":"Winters","la":38.525,"lo":-121.978,"p":21.6,"y1":1906,"y2":2026,"e":41},{"n":"Woodland 1 Wnw","la":38.683,"lo":-121.794,"p":18.1,"y1":1906,"y2":2024,"e":20},{"n":"Woodland Hills Pierce College","la":34.182,"lo":-118.574,"p":15.8,"y1":1949,"y2":2026,"e":240},{"n":"Yosemite Park Hq","la":37.75,"lo":-119.59,"p":35.5,"y1":1906,"y2":2026,"e":1224},{"n":"Yreka","la":41.703,"lo":-122.642,"p":18.0,"y1":1893,"y2":2026,"e":826},{"n":"Hagan'S Meadow","la":38.85,"lo":-119.94,"p":32.0,"y1":1978,"y2":2026,"e":2370},{"n":"Blue Lakes","la":38.61,"lo":-119.92,"p":43.4,"y1":1980,"y2":2026,"e":2455},{"n":"Poison Flat","la":38.51,"lo":-119.63,"p":32.5,"y1":1980,"y2":2026,"e":2357},{"n":"Sonora Pass","la":38.31,"lo":-119.6,"p":37.0,"y1":1978,"y2":2026,"e":2690},{"n":"Leavitt Meadows","la":38.3,"lo":-119.55,"p":32.6,"y1":1980,"y2":2026,"e":2194},{"n":"Virginia Lakes Ridge","la":38.07,"lo":-119.23,"p":27.6,"y1":1978,"y2":2026,"e":2878},{"n":"Lobdell Lake","la":38.44,"lo":-119.37,"p":25.6,"y1":1978,"y2":2026,"e":2814},{"n":"Ebbetts Pass","la":38.55,"lo":-119.8,"p":53.7,"y1":1978,"y2":2026,"e":2671},{"n":"Heavenly Valley","la":38.92,"lo":-119.92,"p":34.8,"y1":1978,"y2":2026,"e":2615},{"n":"Spratt Creek","la":38.67,"lo":-119.82,"p":31.5,"y1":1980,"y2":2026,"e":1863},{"n":"Cedar Pass","la":41.58,"lo":-120.3,"p":33.8,"y1":1978,"y2":2026,"e":2142},{"n":"Dismal Swamp","la":41.99,"lo":-120.18,"p":48.9,"y1":1980,"y2":2026,"e":2243},{"n":"Independence Creek","la":39.49,"lo":-120.28,"p":31.4,"y1":1980,"y2":2026,"e":1967},{"n":"Independence Camp","la":39.45,"lo":-120.29,"p":32.4,"y1":1978,"y2":2026,"e":2134},{"n":"Independence Lake","la":39.43,"lo":-120.31,"p":48.0,"y1":1978,"y2":2024,"e":2545},{"n":"Truckee #2","la":39.3,"lo":-120.18,"p":34.9,"y1":1980,"y2":2026,"e":1983},{"n":"Ward Creek #3","la":39.14,"lo":-120.22,"p":69.1,"y1":1979,"y2":2026,"e":2028},{"n":"Tahoe City Cross","la":39.17,"lo":-120.15,"p":37.2,"y1":1980,"y2":2026,"e":2071},{"n":"Squaw Valley G.C.","la":39.19,"lo":-120.26,"p":62.2,"y1":1980,"y2":2026,"e":2447},{"n":"Rubicon #2","la":39.0,"lo":-120.13,"p":41.5,"y1":1980,"y2":2026,"e":2343},{"n":"Echo Peak","la":38.85,"lo":-120.08,"p":58.6,"y1":1980,"y2":2026,"e":2337},{"n":"Fallen Leaf","la":38.93,"lo":-120.05,"p":32.9,"y1":1979,"y2":2026,"e":1900},{"n":"Desert Resorts Rgnl Ap","la":33.632,"lo":-116.164,"p":2.9,"y1":1950,"y2":2026,"e":-36},{"n":"Torrance Ap","la":33.802,"lo":-118.341,"p":13.5,"y1":1932,"y2":2026,"e":27},{"n":"Imperial Co Ap","la":32.835,"lo":-115.577,"p":2.1,"y1":1962,"y2":2026,"e":-16},{"n":"Lancaster","la":34.741,"lo":-118.213,"p":6.9,"y1":1974,"y2":2026,"e":712},{"n":"Lemoore Reeves Nas","la":36.333,"lo":-119.95,"p":7.1,"y1":1961,"y2":2026,"e":70},{"n":"March Afb","la":33.9,"lo":-117.25,"p":8.6,"y1":1949,"y2":2026,"e":468},{"n":"Long Beach Daugherty Ap","la":33.812,"lo":-118.147,"p":11.5,"y1":1949,"y2":2026,"e":10},{"n":"Van Nuys Ap","la":34.212,"lo":-118.491,"p":12.3,"y1":1949,"y2":2026,"e":239},{"n":"Camarillo Ap","la":34.211,"lo":-119.088,"p":11.7,"y1":1952,"y2":2026,"e":21},{"n":"Bakersfield Ap","la":35.434,"lo":-119.055,"p":6.1,"y1":1937,"y2":2026,"e":149},{"n":"Bishop Ap","la":37.371,"lo":-118.359,"p":5.3,"y1":1895,"y2":2026,"e":1252},{"n":"Blythe Asos","la":33.619,"lo":-114.714,"p":3.4,"y1":1948,"y2":2026,"e":120},{"n":"Barstow-Daggett Ap","la":34.854,"lo":-116.787,"p":3.7,"y1":1943,"y2":2026,"e":584},{"n":"Los Angeles Intl Ap","la":33.938,"lo":-118.387,"p":11.9,"y1":1944,"y2":2026,"e":29},{"n":"Needles Ap","la":34.768,"lo":-114.618,"p":4.4,"y1":1940,"y2":2026,"e":270},{"n":"Palmdale Ap","la":34.629,"lo":-118.083,"p":5.2,"y1":1948,"y2":2026,"e":764},{"n":"Sandberg","la":34.744,"lo":-118.725,"p":12.1,"y1":1934,"y2":2026,"e":1374},{"n":"San Diego Intl Ap","la":32.734,"lo":-117.183,"p":9.9,"y1":1939,"y2":2026,"e":4},{"n":"Santa Barbara Muni Ap","la":34.424,"lo":-119.843,"p":15.7,"y1":1941,"y2":2026,"e":2},{"n":"Avalon Catalina Ap","la":33.404,"lo":-118.414,"p":11.4,"y1":1948,"y2":2026,"e":477},{"n":"El Centro Naf","la":32.833,"lo":-115.664,"p":2.1,"y1":1945,"y2":2025,"e":-14},{"n":"Travis Afb","la":38.267,"lo":-121.933,"p":17.1,"y1":1947,"y2":2025,"e":18},{"n":"Blue Canyon Nyack Ap","la":39.276,"lo":-120.709,"p":65.2,"y1":1940,"y2":2026,"e":1611},{"n":"Oakland Intl Ap","la":37.718,"lo":-122.233,"p":17.7,"y1":1948,"y2":2026,"e":1},{"n":"Sacramento Ap Asos","la":38.507,"lo":-121.496,"p":17.5,"y1":1941,"y2":2026,"e":5},{"n":"Salinas Ap","la":36.664,"lo":-121.609,"p":13.0,"y1":1930,"y2":2026,"e":22},{"n":"San Francisco Intl Ap","la":37.62,"lo":-122.366,"p":19.3,"y1":1945,"y2":2026,"e":3},{"n":"Stockton Ap","la":37.89,"lo":-121.226,"p":13.7,"y1":1948,"y2":2026,"e":8},{"n":"Modesto Ap","la":37.626,"lo":-120.955,"p":11.9,"y1":1906,"y2":2026,"e":26},{"n":"Monterey Peninsul Ap","la":36.59,"lo":-121.849,"p":14.6,"y1":1968,"y2":2026,"e":48},{"n":"Sacramento 5 Ese","la":38.555,"lo":-121.418,"p":18.1,"y1":1877,"y2":2025,"e":11},{"n":"San Francisco Dwtn","la":37.771,"lo":-122.427,"p":21.3,"y1":1921,"y2":2026,"e":45},{"n":"Santa Maria Public Ap","la":34.894,"lo":-120.452,"p":12.7,"y1":1948,"y2":2026,"e":74},{"n":"Ukiah Muni Ap","la":39.128,"lo":-123.2,"p":32.5,"y1":1949,"y2":2026,"e":183},{"n":"Eureka Wfo Woodley Is","la":40.81,"lo":-124.16,"p":39.1,"y1":1941,"y2":2026,"e":6},{"n":"Red Bluff Muni Ap","la":40.152,"lo":-122.255,"p":22.2,"y1":1892,"y2":2026,"e":107},{"n":"Montague Siskiyou Ap","la":41.774,"lo":-122.468,"p":11.4,"y1":1948,"y2":2026,"e":806},{"n":"Crescent City Mcnamara Ap","la":41.784,"lo":-124.238,"p":57.2,"y1":1949,"y2":2026,"e":17},{"n":"China Lake Naf","la":35.686,"lo":-117.691,"p":3.0,"y1":1944,"y2":2026,"e":680},{"n":"San Diego Miramar Nas","la":32.867,"lo":-117.133,"p":10.9,"y1":1947,"y2":2024,"e":145},{"n":"Pt Mugu Nf","la":34.124,"lo":-119.123,"p":12.4,"y1":1946,"y2":2025,"e":3},{"n":"N Is Nas","la":32.692,"lo":-117.21,"p":8.9,"y1":1945,"y2":2025,"e":4},{"n":"Imperial Beach Ream Fld Nas","la":32.568,"lo":-117.117,"p":7.5,"y1":1945,"y2":2025,"e":7},{"n":"Los Angeles Downtown/Usc","la":34.024,"lo":-118.291,"p":14.5,"y1":1906,"y2":2026,"e":54},{"n":"Fresno Yosemite Intl","la":36.78,"lo":-119.72,"p":10.7,"y1":1948,"y2":2026,"e":101},{"n":"Paso Robles Muni Ap","la":35.669,"lo":-120.629,"p":12.3,"y1":1948,"y2":2026,"e":249},{"n":"S Lake Tahoe Ap","la":38.898,"lo":-119.996,"p":19.1,"y1":1968,"y2":2026,"e":1907}];
+  const svg = document.getElementById('stmap');
+  if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const W=520, H=560, M=26;
+  const laMin=32.3, laMax=42.2, loMin=-124.6, loMax=-113.9;
+  const kx = Math.cos(37.2*Math.PI/180); /* shrink lon so CA keeps its shape */
+  const spanLon = (loMax-loMin)*kx, spanLat = laMax-laMin;
+  const s = Math.min((W-2*M)/spanLon, (H-2*M)/spanLat);
+  const px = lo => M + ((lo-loMin)*kx)*s;
+  const py = la => H - M - (la-laMin)*s;
+  const el=(t,a,p)=>{const e=document.createElementNS(NS,t); for(const k in a)e.setAttribute(k,a[k]); (p||svg).appendChild(e); return e;};
+
+  /* color: gold (dry) -> fog -> blue (wet), sqrt scale to spread the dry end */
+  const stops=[[253,181,21],[207,217,210],[107,155,195],[0,50,98]];
+  function color(p){
+    let t=Math.sqrt(Math.min(p,90)/90)*(stops.length-1);
+    const i=Math.min(Math.floor(t), stops.length-2); t-=i;
+    const c=stops[i].map((v,k)=>Math.round(v+(stops[i+1][k]-v)*t));
+    return `rgb(${c.join(',')})`;
+  }
+
+  /* SoCal divider ~35.5N */
+  el('line',{class:'socal-line', x1:px(-121.6), x2:px(loMax)-6, y1:py(35.5), y2:py(35.5)});
+  const sl=el('text',{class:'socal-lab', x:px(loMax)-6, y:py(35.5)-7, 'text-anchor':'end'});
+  sl.textContent='ENSO SIGNAL CONCENTRATES SOUTH OF HERE';
+
+  const tip=document.getElementById('st-tip');
+  ST.forEach(d=>{
+    const c=el('circle',{class:'st-dot', cx:px(d.lo), cy:py(d.la), r:4.2, fill:color(d.p),
+                         'fill-opacity':.88, stroke:'#ffffff', 'stroke-width':.6});
+    c.addEventListener('mouseenter', ev=>{
+      tip.innerHTML=`<span class="tn">${d.n}</span><br>${d.p}&Prime;/yr average &middot; ${d.e} m elev<br>record ${d.y1}&ndash;${d.y2}`;
+      tip.style.opacity=1;
+    });
+    c.addEventListener('mousemove', ev=>{ tip.style.left=ev.clientX+'px'; tip.style.top=ev.clientY+'px'; });
+    c.addEventListener('mouseleave', ()=> tip.style.opacity=0);
+  });
+
+  /* annotate the extremes */
+  function callout(name, dx, dy, anchor){
+    const d=ST.find(x=>x.n.startsWith(name)); if(!d) return;
+    const x=px(d.lo), y=py(d.la);
+    el('path',{class:'st-anno-line', d:`M ${x} ${y} l ${dx} ${dy}`});
+    const t=el('text',{class:'st-anno', x:x+dx+(anchor==='end'?-4:4), y:y+dy+4, 'text-anchor':anchor||'start'});
+    t.textContent=`${d.n} \u00b7 ${d.p}\u2033`;
+  }
+  callout('Gasquet', 46, 14, 'start');
+  callout('Imperial Co', -20, 34, 'end');
+})();
+
+/* ================= OCEAN DEEP DIVE ================= */
+(function(){
+  const cv = document.getElementById('ocean');
+  if(!cv) return;
+  const ctx = cv.getContext('2d');
+  const slider = document.getElementById('oni-slider');
+  const moodName = document.getElementById('mood-name');
+  const moodTime = document.getElementById('mood-time');
+  const roOni = document.getElementById('ro-oni'), roRsoi = document.getElementById('ro-rsoi'),
+        roPrecip = document.getElementById('ro-precip'), roMatch = document.getElementById('ro-match');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* palettes: cool La Nina <-> warm El Nino, t in [0,1] where oni -2 -> 0, +3 -> 1 */
+  const cool = { skyTop:[6,28,52],  skyBot:[27,74,118],  seaTop:[10,58,99],  seaBot:[3,26,48],  crest:[130,190,240], glow:[110,170,225] };
+  const warm = { skyTop:[38,32,46], skyBot:[168,96,38],  seaTop:[64,84,92],  seaBot:[18,32,44], crest:[253,181,21],  glow:[240,150,60] };
+  const lerp = (a,b,t)=> a+(b-a)*t;
+  const mix = (c1,c2,t)=> `rgb(${c1.map((v,i)=>Math.round(lerp(v,c2[i],t))).join(',')})`;
+
+  let oni = 0, t = 0.4, frame = 0;
+  function phaseName(o){
+    if(o<=-1.5) return 'STRONG LA NI\u00d1A';
+    if(o<=-0.5) return 'LA NI\u00d1A';
+    if(o< 0.5)  return 'NEUTRAL';
+    if(o< 1.5)  return 'EL NI\u00d1O';
+    return 'STRONG EL NI\u00d1O';
+  }
+  function nearestYear(o){
+    let best=null, bd=1e9;
+    DATA.forEach(d=>{ const dd=Math.abs(d.o-o); if(dd<bd){bd=dd; best=d;} });
+    return best;
+  }
+  function fmt(o){ return (o>=0?'+':'') + o.toFixed(1); }
+
+  function setOni(v){
+    oni = v; t = (oni + 2) / 5;
+    moodName.textContent = phaseName(oni);
+    moodTime.textContent = `ONI ${fmt(oni)} \u00b0C`;
+    roOni.textContent = `${fmt(oni)} \u00b0C`;
+    roRsoi.textContent = fmt(oni*0.9);
+    const shift = 2.6*oni;
+    roPrecip.textContent = `${shift>=0?'+':''}${shift.toFixed(1)} in`;
+    const m = nearestYear(oni);
+    roMatch.innerHTML = `WY ${m.y} <small>ONI ${fmt(m.o)}, ${m.p}\u2033</small>`;
+    if(reduce) draw();
+  }
+  slider.addEventListener('input', e=> setOni(+e.target.value/100));
+
+  function size(){
+    const dpr = Math.min(devicePixelRatio||1, 2);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    cv.width = w*dpr; cv.height = h*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w,h};
+  }
+  addEventListener('resize', ()=>{ if(reduce) draw(); });
+
+  function draw(){
+    const {w,h} = size();
+    const horizon = h*0.42;
+    /* sky */
+    let g = ctx.createLinearGradient(0,0,0,horizon);
+    g.addColorStop(0, mix(cool.skyTop, warm.skyTop, t));
+    g.addColorStop(1, mix(cool.skyBot, warm.skyBot, t));
+    ctx.fillStyle = g; ctx.fillRect(0,0,w,horizon+2);
+    /* celestial disc: cold moon high-left drifts to warm low sun right as ONI warms */
+    const dx = w*(0.24 + 0.52*t), dy = horizon*(0.30 + 0.48*t), dr = 13 + 9*t;
+    g = ctx.createRadialGradient(dx,dy,dr*0.5,dx,dy,dr*8);
+    g.addColorStop(0, `rgba(${Math.round(lerp(220,255,t))},${Math.round(lerp(232,214,t))},${Math.round(lerp(245,150,t))},.5)`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(dx,dy,dr*8,0,6.283); ctx.fill();
+    ctx.fillStyle = mix([228,238,248],[255,242,205],t);
+    ctx.beginPath(); ctx.arc(dx,dy,dr,0,6.283); ctx.fill();
+    /* horizon glow */
+    g = ctx.createRadialGradient(w*0.5, horizon, 10, w*0.5, horizon, w*0.55);
+    g.addColorStop(0, mix(cool.glow, warm.glow, t) );
+    ctx.globalAlpha = .35 + .25*t;
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0,0,w,horizon+2);
+    ctx.globalAlpha = 1;
+    /* sea base */
+    g = ctx.createLinearGradient(0,horizon,0,h);
+    g.addColorStop(0, mix(cool.seaTop, warm.seaTop, t));
+    g.addColorStop(1, mix(cool.seaBot, warm.seaBot, t));
+    ctx.fillStyle = g; ctx.fillRect(0,horizon,w,h-horizon);
+    /* wave layers: energy scales with |oni| */
+    const energy = 1 + Math.abs(oni)*0.55;
+    for(let L=0; L<4; L++){
+      const yBase = horizon + (L+1)*(h-horizon)/5.2;
+      const amp = (3 + L*2.2) * energy;
+      const wl = 120 + L*70;
+      const speed = (0.6 + L*0.25) * energy;
+      ctx.beginPath();
+      ctx.moveTo(0,h); 
+      for(let x=0; x<=w; x+=4){
+        const y = yBase + Math.sin((x/wl)*Math.PI*2 + frame*0.02*speed + L*1.7)*amp
+                        + Math.sin((x/(wl*0.37))*Math.PI*2 - frame*0.013*speed)*amp*0.35;
+        ctx.lineTo(x,y);
+      }
+      ctx.lineTo(w,h); ctx.closePath();
+      const shade = mix(cool.seaTop, warm.seaTop, t);
+      ctx.fillStyle = shade;
+      ctx.globalAlpha = 0.16 + L*0.05;
+      ctx.fill();
+      /* crest line */
+      ctx.globalAlpha = 0.28 + L*0.06;
+      ctx.strokeStyle = mix(cool.crest, warm.crest, t);
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      for(let x=0; x<=w; x+=4){
+        const y = yBase + Math.sin((x/wl)*Math.PI*2 + frame*0.02*speed + L*1.7)*amp
+                        + Math.sin((x/(wl*0.37))*Math.PI*2 - frame*0.013*speed)*amp*0.35;
+        x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    /* moonlight / sunpath shimmer down the middle */
+    g = ctx.createLinearGradient(0,horizon,0,h);
+    const cr = mix(cool.crest, warm.crest, t);
+    g.addColorStop(0, cr); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = .10 + .08*t;
+    ctx.fillStyle = g;
+    ctx.fillRect(w*0.42, horizon, w*0.16, h-horizon);
+    ctx.globalAlpha = 1;
+  }
+  /* energy budget: ~30fps, and 0fps when the panel is off-screen */
+  let visible = false, rafId = null, last = 0;
+  function loop(now){
+    rafId = null;
+    if(!visible) return;
+    if(now - last >= 33){ last = now; frame++; draw(); }
+    rafId = requestAnimationFrame(loop);
+  }
+  const oio = new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      visible = e.isIntersecting;
+      if(visible && !reduce && rafId===null){ rafId = requestAnimationFrame(loop); }
+    });
+  }, {threshold: 0.05});
+  oio.observe(cv);
+  setOni(0);
+  draw(); /* one frame so the panel is never blank before it scrolls in */
+})();
+</script>
+
+<script>
+(function(){
+  var wrap=document.getElementById('rc-tblwrap');
+  var steps=document.querySelectorAll('.rc-step');
+  if(!wrap||!steps.length) return;
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        steps.forEach(function(s){s.classList.remove('is-active');});
+        e.target.classList.add('is-active');
+        var f=e.target.getAttribute('data-focus');
+        if(f) wrap.setAttribute('data-focus',f); else wrap.removeAttribute('data-focus');
+      }
+    });
+  },{rootMargin:'-42% 0px -42% 0px'});
+  steps.forEach(function(s){io.observe(s);});
+})();
+</script>
+</body>
+</html>
